@@ -16,9 +16,9 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 
-#include "orbit_estimation/ekf.h"
+#include "ball_orbit_estimator/ekf.h"
 
-namespace orbit_estimation
+namespace ball_orbit_estimator
 {
 class OrbitEstimationNodelet : public nodelet::Nodelet
 {
