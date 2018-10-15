@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>orbit_estimation</name>
+  <version>0.0.0</version>
+  <description>For ball orbit Estimation.</description>
+
+  <maintainer email="m-hattori@jsk.imi.i.u-tokyo.ac.jp">Mirai Hattori</maintainer>
+
+  <license>BSD</license>
+
+  <author>Mirai Hattori</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>nodelet</depend>
+  <depend>sensor_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>opencv_apps</depend>
+  <depend>cv_bridge</depend>
+
+  <depend>gcc-avr</depend>
+  <depend>avr-libc</depend>
+  <depend>avrdude</depend>
+  <depend>binutils-avr</depend>
+
+  <exec_depend>image_proc</exec_depend>
+  <exec_depend>stereo_image_proc</exec_depend>
+  <exec_depend>jsk_perception</exec_depend>
+
+  <test_depend>roslaunch</test_depend>
+  <test_depend>roslint</test_depend>
+
+  <export>
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+  </export>
+</package>

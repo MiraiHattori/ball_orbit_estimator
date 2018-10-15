@@ -1,0 +1,38 @@
+<launch>
+    <arg name="camera_name" default="pointgrey" />
+    <include file="$(find pointgrey_camera_driver)/launch/stereo.launch">
+        <arg name="camera_name" value="$(arg camera_name)" />
+    </include>
+    <group ns="$(arg camera_name)">
+        <node name="image_view_left_color" pkg="image_view" type="image_view">
+          <remap from="image" to="/$(arg camera_name)/left/image_rect_color" />
+        </node>
+        <node name="image_view_left_hsv" pkg="image_view" type="image_view">
+            <remap from="image" to="/$(arg camera_name)/left/hsv/image" />
+        </node>
+        <node name="image_view_left_dilate" pkg="image_view" type="image_view">
+            <remap from="image" to="/$(arg camera_name)/left/dilate/output" />
+        </node>
+        <node name="image_view_right_color" pkg="image_view" type="image_view">
+          <remap from="image" to="/$(arg camera_name)/right/image_rect_color" />
+        </node>
+        <node name="image_view_right_hsv" pkg="image_view" type="image_view">
+            <remap from="image" to="/$(arg camera_name)/right/hsv/image" />
+        </node>
+        <node name="image_view_right_dilate" pkg="image_view" type="image_view">
+            <remap from="image" to="/$(arg camera_name)/right/dilate/output" />
+        </node>
+        <node name="param_adjuster" pkg="rqt_reconfigure" type="rqt_reconfigure" />
+        <!--multiple image_view launch is not yet merged(PR #337 in ros-perception/image_pipeline) -->
+        <!--node name="image_view_left" pkg="nodelet" type="nodelet"
+              args="load image_view/image $(arg nodelet_manager_name_absolute)" output="screen">
+          <param name="image_transport" value="compressed" />
+          <remap from="image" to="/$(arg camera_name)/left/image_raw" />
+        </node>
+        <node name="image_view_right" pkg="nodelet" type="nodelet"
+              args="load image_view/image $(arg nodelet_manager_name_absolute)" output="screen">
+          <param name="image_transport" value="compressed" />
+          <remap from="image" to="/$(arg camera_name)/right/image_raw" />
+        </node-->
+    </group>
+</launch>

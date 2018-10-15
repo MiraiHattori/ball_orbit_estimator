@@ -1,0 +1,5 @@
+<launch>
+  <arg name="use_sim_time" default="false" />
+  <param name="/use_sim_time" value="$(arg use_sim_time)" />
+  <node pkg="rviz" type="rviz" name="rviz" args="-d /home/future731/catkin_ws/pointgrey_test/src/pointgrey_camera_driver/pointgrey_camera_driver/rviz/ball_raw_point.rviz"/>
+</launch>

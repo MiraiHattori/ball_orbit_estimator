@@ -1,0 +1,11 @@
+<library path="lib/libSyncStereoImagesNodelet">
+  <class name="orbit_estimation/SyncStereoImagesNodelet" type="orbit_estimation::SyncStereoImagesNodelet" base_class_type="nodelet::Nodelet">
+    <description>This is the nodelet for stereo images synchronization.</description>
+  </class>
+</library>
+
+<library path="lib/libOrbitEstimationNodelet">
+  <class name="orbit_estimation/OrbitEstimationNodelet" type="orbit_estimation::OrbitEstimationNodelet" base_class_type="nodelet::Nodelet">
+    <description>This is the nodelet for stereo images to estimate the ball orbit.</description>
+  </class>
+</library>

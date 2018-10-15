@@ -1,0 +1,4 @@
+<launch>
+    <param name="/use_sim_time" value="false" />
+    <node name="recorder" pkg="rosbag" type="record" args="/pointgrey/left/image_raw_large /pointgrey/right/image_raw_large /pointgrey/left/camera_info_large /pointgrey/right/camera_info_large /tf" output="screen" />
+</launch>
