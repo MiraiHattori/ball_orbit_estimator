@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>orbit_estimation</name>
+  <name>ball_orbit_estimator</name>
   <version>0.0.0</version>
   <description>For ball orbit Estimation.</description>
 

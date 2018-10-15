@@ -195,12 +195,12 @@
         </node>
     </group>
     <node name="sync_nodelet" pkg="nodelet" type="nodelet"
-        args="load orbit_estimation/SyncStereoImagesNodelet $(arg nodelet_manager_name)">
+        args="load ball_orbit_estimator/SyncStereoImagesNodelet $(arg nodelet_manager_name)">
       <param name="approximate_sync" value="true" />
       <param name="queue_size" value="5" />
     </node>
-    <node name="orbit_estimation" pkg="nodelet" type="nodelet"
-        args="load orbit_estimation/OrbitEstimationNodelet $(arg nodelet_manager_name)">
+    <node name="ball_orbit_estimator" pkg="nodelet" type="nodelet"
+        args="load ball_orbit_estimator/OrbitEstimationNodelet $(arg nodelet_manager_name)">
     </node>
     <!-- <node name="disparity" pkg="nodelet" type="nodelet" -->
     <!--     args="load stereo_image_proc/disparity $(arg nodelet_manager_name_absolute)"> -->

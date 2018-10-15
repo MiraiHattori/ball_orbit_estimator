@@ -84,7 +84,7 @@ private:
   {
     if (pixels->points.size() != 2)
     {
-      std::cerr << "orbit_estimation: invalid points size in ekf_orbit_estimation.cpp" << std::endl;
+      std::cerr << "ball_orbit_estimator: invalid points size in ekf_ball_orbit_estimator.cpp" << std::endl;
     }
     Eigen::VectorXd pixel_l(2);
     Eigen::VectorXd pixel_r(2);
@@ -141,7 +141,7 @@ private:
     double delta_t = diff.toSec();
     if (delta_t < 0.0)
     {
-      std::cerr << "orbit_estimation: orbit estimation time stamp is inverted" << std::endl;
+      std::cerr << "ball_orbit_estimator: orbit estimation time stamp is inverted" << std::endl;
     }
 
     const Eigen::VectorXd GRAVITY((Eigen::VectorXd(3) << 0, 0, -9.80665).finished());
@@ -266,6 +266,6 @@ private:
   ros::Time t_;
 };
 
-PLUGINLIB_DECLARE_CLASS(orbit_estimation, OrbitEstimationNodelet, orbit_estimation::OrbitEstimationNodelet,
+PLUGINLIB_DECLARE_CLASS(ball_orbit_estimator, OrbitEstimationNodelet, ball_orbit_estimator::OrbitEstimationNodelet,
                         nodelet::Nodelet);
 }

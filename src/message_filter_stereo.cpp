@@ -20,7 +20,7 @@
 #include <opencv_apps/Point2DStamped.h>
 #include <opencv_apps/Point2DArrayStamped.h>
 
-namespace orbit_estimation
+namespace ball_orbit_estimator
 {
 class SyncStereoImagesNodelet : public nodelet::Nodelet
 {
@@ -272,6 +272,6 @@ private:
   ros::NodeHandle pnh_;
 };
 
-PLUGINLIB_DECLARE_CLASS(orbit_estimation, SyncStereoImagesNodelet, orbit_estimation::SyncStereoImagesNodelet,
+PLUGINLIB_DECLARE_CLASS(ball_orbit_estimator, SyncStereoImagesNodelet, ball_orbit_estimator::SyncStereoImagesNodelet,
                         nodelet::Nodelet);
 }

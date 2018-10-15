@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(orbit_estimation)
+project(ball_orbit_estimator)
 
 find_package(catkin REQUIRED COMPONENTS
   image_transport nodelet roscpp sensor_msgs
