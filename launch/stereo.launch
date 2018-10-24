@@ -27,7 +27,7 @@
   <!--arg name="height" value="512" /-->
 
   <group ns="$(arg camera_name)" >
-    <node name="pointgrey_tf_opt" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 1 map /pointgrey_tf_opt 100" />
+    <node name="pointgrey_tf_opt" pkg="tf" type="static_transform_publisher" args="0.0957 0.115 0.0495 0.5 -0.5 -0.5 0.5 HEAD_LINK1 /pointgrey_tf_opt 100" />
     <node name="pointgrey_tf" pkg="tf" type="static_transform_publisher" args="0 0 0 0.5 -0.5 0.5 0.5 /pointgrey_tf_opt /pointgrey_tf 100" />
 
     <node name="$(arg nodelet_manager_name)" pkg="nodelet" type="nodelet" args="manager" />
