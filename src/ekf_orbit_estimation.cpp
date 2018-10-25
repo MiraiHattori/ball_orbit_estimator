@@ -23,6 +23,10 @@
 
 namespace ball_orbit_estimator
 {
+/*
+ * @brief mapのtfから見たボールの軌道をpublishするnodelet
+ * 左右眼画像2枚を受け取り，ボールの予測軌道をEKFで返す
+ */
 class OrbitEstimationNodelet : public nodelet::Nodelet
 {
 public:
@@ -87,7 +91,7 @@ private:
   {
     if (pixels->points.size() != 2)
     {
-      std::cerr << "ball_orbit_estimator: invalid points size in ekf_ball_orbit_estimator.cpp" << std::endl;
+      std::cerr << "[ball_orbit_estimator] invalid points size in ekf_ball_orbit_estimator.cpp" << std::endl;
     }
 
     // {{{ getting camera tf
@@ -104,6 +108,10 @@ private:
       return;
     }
     tf::Quaternion tf_q_camera = camera_tf.getRotation();
+    tf::Vector3 tf_pos_camera = camera_tf.getOrigin();
+    Eigen::Vector3d pos_camera;
+    tf::vectorTFToEigen(tf_pos_camera, pos_camera);
+    Eigen::Vector3d pos_camera_inv = -pos_camera;
     Eigen::Quaterniond q_camera;
     tf::quaternionTFToEigen(tf_q_camera, q_camera);
     Eigen::Quaterniond q_camera_inv = q_camera.inverse();
@@ -158,7 +166,7 @@ private:
     point_opt << result.at<float>(0, 0) / result.at<float>(3, 0), result.at<float>(1, 0) / result.at<float>(3, 0),
         result.at<float>(2, 0) / result.at<float>(3, 0);
     point << point_opt[2], -point_opt[0], -point_opt[1];
-    point_rot = q_camera * point;
+    point_rot = q_camera * point + pos_camera;
     // リンク座標を地面の姿勢に変えた系でのボール位置
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
 
@@ -192,9 +200,9 @@ private:
     u.block(3, 0, 3, 1) = GRAVITY * delta_t;
     Eigen::VectorXd z(4);
     z << pixel_l[0], pixel_l[1], pixel_r[0], pixel_r[1];
-    std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, q_camera_inv](Eigen::VectorXd x) {
+    std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, q_camera_inv, pos_camera_inv](Eigen::VectorXd x) {
       Eigen::VectorXd z_(4);
-      Eigen::VectorXd x_rot = q_camera_inv * x;
+      Eigen::VectorXd x_rot = q_camera_inv * x + pos_camera_inv;
       double X = x_rot[0];
       double Y = x_rot[1];
       double Z = x_rot[2];
@@ -202,8 +210,9 @@ private:
           -PR(1, 1) * Z / X + PR(1, 2);
       return z_;
     };
-    std::function<Eigen::MatrixXd(Eigen::VectorXd)> dh = [PL, PR, q_camera_inv](Eigen::VectorXd x_filtered_pre) {
-      Eigen::VectorXd x_rot = q_camera_inv * x_filtered_pre;
+    std::function<Eigen::MatrixXd(Eigen::VectorXd)> dh = [PL, PR, q_camera_inv,
+                                                          pos_camera_inv](Eigen::VectorXd x_filtered_pre) {
+      Eigen::VectorXd x_rot = q_camera_inv * x_filtered_pre + pos_camera_inv;
       double X = x_rot[0];
       double Y = x_rot[1];
       double Z = x_rot[2];
