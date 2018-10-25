@@ -14,17 +14,18 @@ namespace Filter
  * 状態方程式: x = F x_pre + u + G w
  * zを観測値, Hを観測行列, vをN(0, R)に従う観測ノイズとする
  * 観測方程式: z = H x + v
- * @author future731
+ * @author m-hattori
  */
 class EKF
 {
 public:
   using VecXd = Eigen::VectorXd;
   using MatXd = Eigen::MatrixXd;
-  // @brief初期状態と分散共分散行列の初期値
+  // @brief 初期状態と分散共分散行列の初期値
   explicit EKF(const VecXd& x_init, const MatXd& P_init) : m_x_filtered(x_init), m_P_filtered(P_init)
   {
   }
+  explicit EKF(const EKF&) = default;
 
   /*
    * @brief 現在状態を推定し、現在の状態の分散共分散行列を求める
@@ -96,6 +97,12 @@ public:
     result.first = m_x_filtered;
     result.second = m_P_filtered;
     return result;
+  }
+
+  void reset(const VecXd& x_init, const MatXd& P_init)
+  {
+    m_x_filtered = x_init;
+    m_P_filtered = P_init;
   }
 
 private:
