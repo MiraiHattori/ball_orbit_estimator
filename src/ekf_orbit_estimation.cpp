@@ -1,6 +1,8 @@
 #include <ros/ros.h>
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
+#include <tf/transform_listener.h>
+#include <tf_conversions/tf_eigen.h>
 
 #include <boost/thread.hpp>
 #include <memory>
@@ -15,6 +17,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/LU>
+#include <Eigen/Geometry>
 
 #include "ball_orbit_estimator/ekf.h"
 
@@ -86,6 +89,28 @@ private:
     {
       std::cerr << "ball_orbit_estimator: invalid points size in ekf_ball_orbit_estimator.cpp" << std::endl;
     }
+
+    // {{{ getting camera tf
+    tf::StampedTransform camera_tf;
+    try
+    {
+#warning using map tf as origin ロボットが回転したらどうなるのか検討する
+      // カメラ姿勢を取得してtransform
+      camera_tf_listener_.lookupTransform("/pointgrey_tf", "map", ros::Time(0), camera_tf);
+    }
+    catch (tf::TransformException& ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      return;
+    }
+    tf::Quaternion tf_q_camera = camera_tf.getRotation();
+    Eigen::Quaterniond q_camera;
+    tf::quaternionTFToEigen(tf_q_camera, q_camera);
+    Eigen::Quaterniond q_camera_inv = q_camera.inverse();
+    // }}}
+
+    // {{{ getting raw point
+
     Eigen::VectorXd pixel_l(2);
     Eigen::VectorXd pixel_r(2);
     pixel_l[0] = pixels->points.at(0).x;
@@ -124,11 +149,19 @@ private:
     float resultd[4] = { 0.0, 0.0, 0.0, 0.0 };
     cv::Mat result(cv::Size(1, 4), CV_32F, resultd);
     cv::triangulatePoints(p, rp, xy, rxy, result);
-    Eigen::VectorXd point(3);
-    point << result.at<float>(0, 0) / result.at<float>(3, 0), result.at<float>(1, 0) / result.at<float>(3, 0),
-        result.at<float>(2, 0) / result.at<float>(3, 0);
 
-    std::cerr << "measured: " << point[2] << " " << -point[0] << " " << -point[1] << std::endl;
+    // 光学座標系でのボール位置
+    Eigen::VectorXd point_opt(3);
+    // リンク座標系でのボール位置
+    Eigen::VectorXd point(3);
+    Eigen::VectorXd point_rot(3);
+    point_opt << result.at<float>(0, 0) / result.at<float>(3, 0), result.at<float>(1, 0) / result.at<float>(3, 0),
+        result.at<float>(2, 0) / result.at<float>(3, 0);
+    point << point_opt[2], -point_opt[0], -point_opt[1];
+    point_rot = q_camera * point;
+    // リンク座標を地面の姿勢に変えた系でのボール位置
+    std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
+
     std_msgs::Header header = pixels->header;
     if (not is_time_initialized_)
     {
@@ -143,7 +176,9 @@ private:
     {
       std::cerr << "ball_orbit_estimator: orbit estimation time stamp is inverted" << std::endl;
     }
+    // }}}
 
+    // {{{ EKF
     const Eigen::VectorXd GRAVITY((Eigen::VectorXd(3) << 0, 0, -9.80665).finished());
     // 状態xはカメラリンク座標系でのボールの位置と速度を6次元並べたもの
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(6, 6);
@@ -151,25 +186,27 @@ private:
 
     std::function<Eigen::VectorXd(Eigen::VectorXd)> f = [F](Eigen::VectorXd x) { return F * x; };
     Eigen::MatrixXd G = Eigen::MatrixXd::Identity(6, 6);
-    Eigen::MatrixXd Q = 0.01 * Eigen::MatrixXd::Identity(6, 6);  // なんとなく誤差を入れた
+    Eigen::MatrixXd Q = 0.01 * Eigen::MatrixXd::Identity(6, 6);  // 誤差を入れた(入れないと正定値性失う可能性)
     Eigen::VectorXd u(6);
     u.block(0, 0, 3, 1) = GRAVITY * delta_t * delta_t / 2.0;
     u.block(3, 0, 3, 1) = GRAVITY * delta_t;
     Eigen::VectorXd z(4);
     z << pixel_l[0], pixel_l[1], pixel_r[0], pixel_r[1];
-    std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR](Eigen::VectorXd x) {
+    std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, q_camera_inv](Eigen::VectorXd x) {
       Eigen::VectorXd z_(4);
-      double X = x[0];
-      double Y = x[1];
-      double Z = x[2];
+      Eigen::VectorXd x_rot = q_camera_inv * x;
+      double X = x_rot[0];
+      double Y = x_rot[1];
+      double Z = x_rot[2];
       z_ << -PL(0, 0) * Y / X + PL(0, 2), -PL(1, 1) * Z / X + PL(1, 2), -PR(0, 0) * Y / X + PR(0, 2) + PR(0, 3) / X,
           -PR(1, 1) * Z / X + PR(1, 2);
       return z_;
     };
-    std::function<Eigen::MatrixXd(Eigen::VectorXd)> dh = [PL, PR](Eigen::VectorXd x_filtered_pre) {
-      double X = x_filtered_pre[0];
-      double Y = x_filtered_pre[1];
-      double Z = x_filtered_pre[2];
+    std::function<Eigen::MatrixXd(Eigen::VectorXd)> dh = [PL, PR, q_camera_inv](Eigen::VectorXd x_filtered_pre) {
+      Eigen::VectorXd x_rot = q_camera_inv * x_filtered_pre;
+      double X = x_rot[0];
+      double Y = x_rot[1];
+      double Z = x_rot[2];
       Eigen::MatrixXd H = Eigen::MatrixXd::Zero(4, 6);
       H(0, 0) = PL(0, 0) * Y / (X * X);
       H(0, 1) = -PL(0, 0) / X;
@@ -188,6 +225,7 @@ private:
 
     std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
               << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
+    // }}}
   }
 
   // {{{ member functions to get camera info
@@ -255,6 +293,7 @@ private:
   boost::shared_ptr<boost::thread> pub_thread_;
   boost::mutex connect_mutex_;
 
+  tf::TransformListener camera_tf_listener_;
   geometry_msgs::PointStamped p_msg_;
   ros::Subscriber sub_pixels_;
   ros::Publisher pub_orbit_;
