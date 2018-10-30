@@ -22,7 +22,6 @@
   <depend>gcc-avr</depend>
   <depend>avr-libc</depend>
   <depend>avrdude</depend>
-  <depend>binutils-avr</depend>
 
   <exec_depend>image_proc</exec_depend>
   <exec_depend>stereo_image_proc</exec_depend>
