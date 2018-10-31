@@ -12,8 +12,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>roscpp</depend>
   <depend>nodelet</depend>
+  <depend>roscpp</depend>
+  <depend>message_generation</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>image_transport</depend>
   <depend>opencv_apps</depend>
@@ -23,6 +26,7 @@
   <depend>avr-libc</depend>
   <depend>avrdude</depend>
 
+  <exec_depend>message_runtime</exec_depend>
   <exec_depend>image_proc</exec_depend>
   <exec_depend>stereo_image_proc</exec_depend>
   <exec_depend>jsk_perception</exec_depend>

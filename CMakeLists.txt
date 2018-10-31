@@ -2,12 +2,21 @@ cmake_minimum_required(VERSION 2.8.3)
 project(ball_orbit_estimator)
 
 find_package(catkin REQUIRED COMPONENTS
-  image_transport nodelet roscpp sensor_msgs
-  opencv_apps cv_bridge
-  )
+  nodelet roscpp message_generation std_msgs geometry_msgs sensor_msgs
+  image_transport opencv_apps cv_bridge
+)
+
+add_message_files(
+    FILES
+    PosAndVelWithCovarianceStamped.msg
+)
+
+generate_messages(DEPENDENCIES
+    std_msgs geometry_msgs
+)
 
 catkin_package(CATKIN_DEPENDS
-  nodelet roscpp sensor_msgs cv_bridge
+  nodelet roscpp message_runtime sensor_msgs cv_bridge
 )
 
 find_package(OpenCV REQUIRED)
