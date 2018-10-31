@@ -4,12 +4,13 @@
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
 
+#include <boost/array.hpp>
 #include <boost/thread.hpp>
 #include <memory>
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <geometry_msgs/PointStamped.h>
+#include <ball_orbit_estimator/PosAndVelWithCovarianceStamped.h>
 #include <opencv_apps/Point2DArrayStamped.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
@@ -48,7 +49,7 @@ private:
   void connectCb()
   {
     boost::mutex::scoped_lock scoped_lock(connect_mutex_);
-    if (pub_orbit_.getNumSubscribers() == 0)
+    if (pub_ball_state_.getNumSubscribers() == 0)
     {
       if (pub_thread_)
       {
@@ -69,7 +70,7 @@ private:
   {
     boost::mutex::scoped_lock scoped_lock(connect_mutex_);
     ros::SubscriberStatusCallback cb = boost::bind(&OrbitEstimationNodelet::connectCb, this);
-    pub_orbit_ = getMTNodeHandle().advertise<geometry_msgs::PointStamped>("/pointgrey/ball_orbit", 1, cb, cb);
+    pub_ball_state_ = getMTNodeHandle().advertise<PosAndVelWithCovarianceStamped>("/pointgrey/estimated_ball_state", 1, cb, cb);
 
     Eigen::VectorXd x_init(6);
     // 雑な値を入れておく
@@ -232,8 +233,30 @@ private:
 
     std::pair<Eigen::VectorXd, Eigen::MatrixXd> value = ekf->update(f, F, G, Q, u, z, h, dh, R);
 
-    std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
-              << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
+    PosAndVelWithCovarianceStamped state;
+    state.header = header;
+    geometry_msgs::Point point_msg;
+    point_msg.x = (value.first)[0];
+    point_msg.y = (value.first)[1];
+    point_msg.z = (value.first)[2];
+    state.point = point_msg;
+    geometry_msgs::Vector3 velocity_msg;
+    velocity_msg.x = (value.first)[3];
+    velocity_msg.y = (value.first)[4];
+    velocity_msg.z = (value.first)[5];
+    state.velocity = velocity_msg;
+    boost::array<double, 36> cov_msg;  // 位置速度を並べた6次元ベクトル
+    for (size_t i = 0; i < 6; i++)
+    {
+      for (size_t j = 0; j < 6; j++)
+      {
+        cov_msg.at(i * 6 + j) = (value.second)(i, j);
+      }
+    }
+    state.pos_and_vel_covariance = cov_msg;
+
+    // std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
+    //           << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
     // }}}
   }
 
@@ -291,7 +314,7 @@ private:
     ros::Rate loop2(1);
     while (not boost::this_thread::interruption_requested())
     {
-      if (pub_orbit_.getNumSubscribers() == 0)
+      if (pub_ball_state_.getNumSubscribers() == 0)
       {
         break;
       }
@@ -303,9 +326,8 @@ private:
   boost::mutex connect_mutex_;
 
   tf::TransformListener camera_tf_listener_;
-  geometry_msgs::PointStamped p_msg_;
   ros::Subscriber sub_pixels_;
-  ros::Publisher pub_orbit_;
+  ros::Publisher pub_ball_state_;
   std::unique_ptr<sensor_msgs::CameraInfo> ci_ = nullptr;
   std::unique_ptr<sensor_msgs::CameraInfo> rci_ = nullptr;
   std::unique_ptr<Filter::EKF> ekf = nullptr;
