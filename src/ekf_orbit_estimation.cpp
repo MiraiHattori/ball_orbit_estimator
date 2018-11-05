@@ -72,20 +72,7 @@ private:
     ros::SubscriberStatusCallback cb = boost::bind(&OrbitEstimationNodelet::connectCb, this);
     pub_ball_state_ = getMTNodeHandle().advertise<PosAndVelWithCovarianceStamped>("/pointgrey/estimated_ball_state", 1, cb, cb);
 
-    Eigen::VectorXd x_init(6);
-    // 雑な値を入れておく
-    x_init << 4.0, 0.0, 0.0, -1.0, -1.0, 3.0;
-    // 雑な値を入れておいたので増やしておく
-    Eigen::MatrixXd P_init(6, 6);
-    // clang-format off
-    P_init << 3.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-              0.0, 0.5, 0.0, 0.0, 0.0, 0.0,
-              0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
-              0.0, 0.0, 0.0, 30.0, 0.0, 0.0,
-              0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-              0.0, 0.0, 0.0, 0.0, 0.0, 3.0;
-    // clang-format on
-    ekf.reset(new Filter::EKF(x_init, P_init));
+    // EKFの初期化はコールバック内で行う
   }
 
   void callback(const boost::shared_ptr<opencv_apps::Point2DArrayStamped const>& pixels)
@@ -168,6 +155,7 @@ private:
         result.at<float>(2, 0) / result.at<float>(3, 0);
     point << point_opt[2], -point_opt[0], -point_opt[1];
     point_rot = q_camera * point + pos_camera;
+#warning 座標系
     // リンク座標を地面の姿勢に変えた系でのボール位置
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
 
@@ -188,14 +176,22 @@ private:
     // }}}
 
     // {{{ EKF
+    /*
+     * 状態: ボールの(x, y, z, vx, vy, vz)
+     * 撮影時刻の前回からのdiff(delta_t)
+     * カメラ位置(pos_camera)
+     * カメラ姿勢(q_camera)と画面上でのボール中心(lx, ly, rx, ry)のあるピクセルEKF
+     */
     const Eigen::VectorXd GRAVITY((Eigen::VectorXd(3) << 0, 0, -9.80665).finished());
-    // 状態xはカメラリンク座標系でのボールの位置と速度を6次元並べたもの
+#warning コメント直す(座標系)
+    // 状態xはmap座標系(?)でのボールの位置と速度を6次元並べたもの
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(6, 6);
     F.block(0, 3, 3, 3) = delta_t * Eigen::MatrixXd::Identity(3, 3);
 
     std::function<Eigen::VectorXd(Eigen::VectorXd)> f = [F](Eigen::VectorXd x) { return F * x; };
     Eigen::MatrixXd G = Eigen::MatrixXd::Identity(6, 6);
-    Eigen::MatrixXd Q = 0.01 * Eigen::MatrixXd::Identity(6, 6);  // 誤差を入れた(入れないと正定値性失う可能性)
+    // 誤差を入れた(入れないと正定値性失う可能性)
+    Eigen::MatrixXd Q = 0.01 * Eigen::MatrixXd::Identity(6, 6);
     Eigen::VectorXd u(6);
     u.block(0, 0, 3, 1) = GRAVITY * delta_t * delta_t / 2.0;
     u.block(3, 0, 3, 1) = GRAVITY * delta_t;
@@ -231,33 +227,60 @@ private:
     // 画素のばらつき
     Eigen::MatrixXd R = 10.0 * Eigen::MatrixXd::Identity(4, 4);
 
-    std::pair<Eigen::VectorXd, Eigen::MatrixXd> value = ekf->update(f, F, G, Q, u, z, h, dh, R);
-
-    PosAndVelWithCovarianceStamped state;
-    state.header = header;
-    geometry_msgs::Point point_msg;
-    point_msg.x = (value.first)[0];
-    point_msg.y = (value.first)[1];
-    point_msg.z = (value.first)[2];
-    state.point = point_msg;
-    geometry_msgs::Vector3 velocity_msg;
-    velocity_msg.x = (value.first)[3];
-    velocity_msg.y = (value.first)[4];
-    velocity_msg.z = (value.first)[5];
-    state.velocity = velocity_msg;
-    boost::array<double, 36> cov_msg;  // 位置速度を並べた6次元ベクトル
-    for (size_t i = 0; i < 6; i++)
+    if (not is_ekf_initialized_)
     {
-      for (size_t j = 0; j < 6; j++)
-      {
-        cov_msg.at(i * 6 + j) = (value.second)(i, j);
-      }
+      Eigen::VectorXd x_init(6);
+#warning 初期値をもっとしっかりフィルタをかける
+      // 雑な値を入れておく(位置は最初に見つけたところ，速度は45度射出時に原点に向かうところ)
+      // v0*t=distance, v0*t-g*t^2/2=-zより，v0=d*g^0.5/(2d-2z)^0.5 (g=-GRAVITY[2])
+      double distance = std::hypot(point_rot[0], point_rot[1]);
+      double v0 = distance * std::sqrt(-GRAVITY[2]) / std::sqrt(2 * (std::abs(distance + point_rot[2])));
+      x_init << point_rot[0], point_rot[1], point_rot[2],                  // 位置
+          v0 * point_rot[0] / distance, v0 * point_rot[1] / distance, v0;  // 速度
+      // 雑な値を入れておいたので増やしておく
+      Eigen::MatrixXd P_init(6, 6);
+      // clang-format off
+      P_init << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.5, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 5.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 3.0;
+      // clang-format on
+      is_ekf_initialized_ = true;
+      ekf.reset(new Filter::EKF(x_init, P_init));
     }
-    state.pos_and_vel_covariance = cov_msg;
 
-    // std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
-    //           << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
-    // }}}
+    if (is_ekf_initialized_)
+    {
+      std::pair<Eigen::VectorXd, Eigen::MatrixXd> value = ekf->update(f, F, G, Q, u, z, h, dh, R);
+
+      PosAndVelWithCovarianceStamped state;
+      state.header = header;
+      geometry_msgs::Point point_msg;
+      point_msg.x = (value.first)[0];
+      point_msg.y = (value.first)[1];
+      point_msg.z = (value.first)[2];
+      state.point = point_msg;
+      geometry_msgs::Vector3 velocity_msg;
+      velocity_msg.x = (value.first)[3];
+      velocity_msg.y = (value.first)[4];
+      velocity_msg.z = (value.first)[5];
+      state.velocity = velocity_msg;
+      boost::array<double, 36> cov_msg;  // 位置速度を並べた6次元ベクトル
+      for (size_t i = 0; i < 6; i++)
+      {
+        for (size_t j = 0; j < 6; j++)
+        {
+          cov_msg.at(i * 6 + j) = (value.second)(i, j);
+        }
+      }
+      state.pos_and_vel_covariance = cov_msg;
+
+      // std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
+      //           << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
+      // }}}
+    }
   }
 
   // {{{ member functions to get camera info
@@ -330,6 +353,7 @@ private:
   ros::Publisher pub_ball_state_;
   std::unique_ptr<sensor_msgs::CameraInfo> ci_ = nullptr;
   std::unique_ptr<sensor_msgs::CameraInfo> rci_ = nullptr;
+  bool is_ekf_initialized_ = false;
   std::unique_ptr<Filter::EKF> ekf = nullptr;
 
   bool is_time_initialized_ = false;
