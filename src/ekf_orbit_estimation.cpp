@@ -235,8 +235,8 @@ private:
       // v0*t=distance, v0*t-g*t^2/2=-zより，v0=d*g^0.5/(2d-2z)^0.5 (g=-GRAVITY[2])
       double distance = std::hypot(point_rot[0], point_rot[1]);
       double v0 = distance * std::sqrt(-GRAVITY[2]) / std::sqrt(2 * (std::abs(distance + point_rot[2])));
-      x_init << point_rot[0], point_rot[1], point_rot[2],                  // 位置
-          v0 * point_rot[0] / distance, v0 * point_rot[1] / distance, v0;  // 速度
+      x_init << point_rot[0], point_rot[1], point_rot[2],                    // 位置
+          -v0 * point_rot[0] / distance, -v0 * point_rot[1] / distance, v0;  // 速度
       // 雑な値を入れておいたので増やしておく
       Eigen::MatrixXd P_init(6, 6);
       // clang-format off
