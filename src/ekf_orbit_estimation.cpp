@@ -199,7 +199,8 @@ private:
     z << pixel_l[0], pixel_l[1], pixel_r[0], pixel_r[1];
     std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, q_camera_inv, pos_camera_inv](Eigen::VectorXd x) {
       Eigen::VectorXd z_(4);
-      Eigen::VectorXd x_rot = q_camera_inv * x + pos_camera_inv;
+      // x.segment(0, 3) extracts ball pos
+      Eigen::VectorXd x_rot = q_camera_inv * x.segment(0, 3) + pos_camera_inv;
       double X = x_rot[0];
       double Y = x_rot[1];
       double Z = x_rot[2];
@@ -209,7 +210,8 @@ private:
     };
     std::function<Eigen::MatrixXd(Eigen::VectorXd)> dh = [PL, PR, q_camera_inv,
                                                           pos_camera_inv](Eigen::VectorXd x_filtered_pre) {
-      Eigen::VectorXd x_rot = q_camera_inv * x_filtered_pre + pos_camera_inv;
+      // x_filtered_pre.segment(0, 3) extracts ball pos
+      Eigen::VectorXd x_rot = q_camera_inv * x_filtered_pre.segment(0, 3) + pos_camera_inv;
       double X = x_rot[0];
       double Y = x_rot[1];
       double Z = x_rot[2];
