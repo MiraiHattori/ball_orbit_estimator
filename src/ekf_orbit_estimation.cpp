@@ -278,6 +278,7 @@ private:
         }
       }
       state.pos_and_vel_covariance = cov_msg;
+      pub_ball_state_.publish(state);
 
       // std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
       //           << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
