@@ -1,4 +1,4 @@
 <launch>
     <param name="/use_sim_time" value="false" />
-    <node name="recorder" pkg="rosbag" type="record" args="/pointgrey/ball_pixels /pointgrey/ball_point /tf" output="screen" />
+    <node name="recorder" pkg="rosbag" type="record" args="/pointgrey/ball_pixels /pointgrey/ball_point /pointgrey/estimated_ball_state /tf" output="screen" />
 </launch>
