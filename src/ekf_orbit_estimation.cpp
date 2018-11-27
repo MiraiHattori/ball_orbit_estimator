@@ -10,7 +10,7 @@
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <ball_orbit_estimator/PosAndVelWithCovarianceStamped.h>
+#include <ball_state_msgs/PosAndVelWithCovarianceStamped.h>
 #include <opencv_apps/Point2DArrayStamped.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
@@ -70,7 +70,7 @@ private:
   {
     boost::mutex::scoped_lock scoped_lock(connect_mutex_);
     ros::SubscriberStatusCallback cb = boost::bind(&OrbitEstimationNodelet::connectCb, this);
-    pub_ball_state_ = getMTNodeHandle().advertise<PosAndVelWithCovarianceStamped>("/pointgrey/estimated_ball_state", 1, cb, cb);
+    pub_ball_state_ = getMTNodeHandle().advertise<ball_state_msgs::PosAndVelWithCovarianceStamped>("/pointgrey/estimated_ball_state", 1, cb, cb);
 
     // EKFの初期化はコールバック内で行う
   }
@@ -257,7 +257,7 @@ private:
     {
       std::pair<Eigen::VectorXd, Eigen::MatrixXd> value = ekf->update(f, F, G, Q, u, z, h, dh, R);
 
-      PosAndVelWithCovarianceStamped state;
+      ball_state_msgs::PosAndVelWithCovarianceStamped state;
       state.header = header;
       geometry_msgs::Point point_msg;
       point_msg.x = (value.first)[0];
