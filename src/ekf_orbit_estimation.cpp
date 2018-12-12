@@ -25,7 +25,7 @@
 namespace ball_orbit_estimator
 {
 /*
- * @brief mapのtfから見たボールの軌道をpublishするnodelet
+ * @brief groundのtfから見たボールの軌道をpublishするnodelet
  * 左右眼画像2枚を受け取り，ボールの予測軌道をEKFで返す
  */
 class OrbitEstimationNodelet : public nodelet::Nodelet
@@ -86,9 +86,9 @@ private:
     tf::StampedTransform camera_tf;
     try
     {
-#warning using map tf as origin ロボットが回転したらどうなるのか検討する
+#warning using ground tf as origin ロボットが回転したらどうなるのか検討する
       // カメラ姿勢を取得してtransform
-      camera_tf_listener_.lookupTransform("/pointgrey_tf", "map", ros::Time(0), camera_tf);
+      camera_tf_listener_.lookupTransform("/pointgrey_tf", "ground", ros::Time(0), camera_tf);
     }
     catch (tf::TransformException& ex)
     {
@@ -184,7 +184,7 @@ private:
      */
     const Eigen::VectorXd GRAVITY((Eigen::VectorXd(3) << 0, 0, -9.80665).finished());
 #warning コメント直す(座標系)
-    // 状態xはmap座標系(?)でのボールの位置と速度を6次元並べたもの
+    // 状態xはground座標系(?)でのボールの位置と速度を6次元並べたもの
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(6, 6);
     F.block(0, 3, 3, 3) = delta_t * Eigen::MatrixXd::Identity(3, 3);
 
@@ -193,8 +193,8 @@ private:
     // 誤差を入れた(入れないと正定値性失う可能性)
     Eigen::MatrixXd Q = 0.01 * Eigen::MatrixXd::Identity(6, 6);
     Eigen::VectorXd u(6);
-    u.block(0, 0, 3, 1) = GRAVITY * delta_t * delta_t / 2.0;
-    u.block(3, 0, 3, 1) = GRAVITY * delta_t;
+    u.segment(0, 3) = GRAVITY * delta_t * delta_t / 2.0;
+    u.segment(3, 3) = GRAVITY * delta_t;
     Eigen::VectorXd z(4);
     z << pixel_l[0], pixel_l[1], pixel_r[0], pixel_r[1];
     std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, q_camera_inv, pos_camera_inv](Eigen::VectorXd x) {
