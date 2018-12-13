@@ -155,7 +155,6 @@ private:
         result.at<float>(2, 0) / result.at<float>(3, 0);
     point << point_opt[2], -point_opt[0], -point_opt[1];
     point_rot = q_camera * point + pos_camera;
-#warning 座標系
     // リンク座標を地面の姿勢に変えた系でのボール位置
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
 
@@ -183,8 +182,7 @@ private:
      * カメラ姿勢(q_camera)と画面上でのボール中心(lx, ly, rx, ry)のあるピクセルEKF
      */
     const Eigen::VectorXd GRAVITY((Eigen::VectorXd(3) << 0, 0, -9.80665).finished());
-#warning コメント直す(座標系)
-    // 状態xはground座標系(?)でのボールの位置と速度を6次元並べたもの
+    // 状態xはground座標系でのボールの位置と速度を6次元並べたもの
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(6, 6);
     F.block(0, 3, 3, 3) = delta_t * Eigen::MatrixXd::Identity(3, 3);
 
@@ -227,7 +225,7 @@ private:
       return H;
     };
     // 画素のばらつき
-    Eigen::MatrixXd R = 10.0 * Eigen::MatrixXd::Identity(4, 4);
+    Eigen::MatrixXd R = 2.0 * Eigen::MatrixXd::Identity(4, 4);
 
     if (not is_ekf_initialized_)
     {
@@ -242,12 +240,12 @@ private:
       // 雑な値を入れておいたので増やしておく
       Eigen::MatrixXd P_init(6, 6);
       // clang-format off
-      P_init << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.5, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 5.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 3.0;
+      P_init << 1.0, 0.0, 0.0, 100.0, 0.0, 0.0,
+                0.0, 0.5, 0.0, 0.0, 100.0, 0.0,
+                0.0, 0.0, 2.0, 0.0, 0.0, 100.0,
+                100.0, 0.0, 0.0, 5.0, 0.0, 0.0,
+                0.0, 100.0, 0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 100.0, 0.0, 0.0, 3.0;
       // clang-format on
       is_ekf_initialized_ = true;
       ekf.reset(new Filter::EKF(x_init, P_init));

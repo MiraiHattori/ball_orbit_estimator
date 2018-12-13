@@ -86,6 +86,8 @@ public:
     std::cout << S << std::endl;
     std::cout << "K" << std::endl;
     std::cout << K << std::endl;
+    std::cout << "K*e" << std::endl;
+    std::cout << K * e << std::endl;
     std::cout << "m_x_filtered" << std::endl;
     std::cout << m_x_filtered << std::endl;
     std::cout << "size" << std::endl;
@@ -101,6 +103,7 @@ public:
 
   void reset(const VecXd& x_init, const MatXd& P_init)
   {
+    std::cout << "[ball_orbit_estimator] ekf reset" << std::endl;
     m_x_filtered = x_init;
     m_P_filtered = P_init;
   }
