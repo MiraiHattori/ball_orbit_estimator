@@ -159,6 +159,7 @@ private:
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
 
     std_msgs::Header header = pixels->header;
+    header.frame_id = "ground";
     if (not is_time_initialized_)
     {
       t_ = header.stamp;

@@ -1,0 +1,185 @@
+<launch>
+  <!-- Common parameters -->
+  <arg name="camera_name" default="pointgrey" />
+  <arg name="frame_rate" default="170" />
+  <arg name="exposure"      value="0.0035" />
+  <arg name="auto_exposure"      value="false" />
+  <arg name="auto_gain"     value="false" />
+  <arg name="gain"          value="10" />
+  <arg name="enable_trigger"          value="true" />
+  <arg name="trigger_source"          value="GPIO0" />
+  <arg name="trigger_polarity"          value="0" />
+  <arg name="gamma"          value="0.6" />
+
+  <arg name="camera_serial_l" default="16276501" />
+  <arg name="camera_calibrated_l" default="true" />
+
+  <arg name="camera_serial_r" default="16276527" />
+  <arg name="camera_calibrated_r" default="true" />
+  <arg name="nodelet_manager_name" value="camera_nodelet_manager" />
+  <arg name="nodelet_manager_name_absolute" value="/$(arg camera_name)/$(arg nodelet_manager_name)" />
+  <arg name="use_scale" value="true" />
+  <arg name="scale_width" value="0.25" />
+  <arg name="scale_height" value="0.25" />
+  <arg name="interpolation" value="linear" />
+  <param name="/use_sim_time" value="true" />
+  <!--arg name="width" value="640" /-->
+  <!--arg name="height" value="512" /-->
+
+  <group ns="$(arg camera_name)" >
+    <node name="pointgrey_tf_opt" pkg="tf" type="static_transform_publisher" args="0.0957 0.115 0.0495 0 0 0 1 HEAD_LINK1 /pointgrey_tf 100" />
+    <node name="pointgrey_tf" pkg="tf" type="static_transform_publisher" args="0 0 0 0.5 -0.5 0.5 -0.5 /pointgrey_tf /pointgrey_tf_opt 100" />
+
+    <node name="$(arg nodelet_manager_name)" pkg="nodelet" type="nodelet" args="manager" />
+
+    <!-- Both cameras are not loaded into one nodelet manager to avoid the namespacing issue. -->
+
+    <!--include file="$(find image_proc)/launch/image_proc.launch" ns="left">
+        <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
+    </include-->
+    <group ns="left">
+        <node name="resizer" pkg="nodelet" type="nodelet"
+            args="load image_proc/resize $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_raw_large" />
+            <remap from="camera_info" to="camera_info_large" />
+            <remap from="~image" to="image_raw" />
+            <remap from="~camera_info" to="camera_info" />
+            <param name="use_scale" value="$(arg use_scale)" />
+            <param name="scale_width" value="$(arg scale_width)" />
+            <param name="scale_height" value="$(arg scale_height)" />
+            <param name="interpolation" value="$(arg interpolation)" />
+        </node>
+        <node name="debayer" pkg="nodelet" type="nodelet"
+            args="load image_proc/debayer $(arg nodelet_manager_name_absolute)">
+            <remap from="image_mono" to="image_mono_raw" />
+        </node>
+        <node name="hsv" pkg="nodelet" type="nodelet"
+            args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_color" />
+            <remap from="hsv/image" to="image_hsv" />
+            <param name="h_limit_max" value="16" />
+            <param name="h_limit_min" value="5" />
+            <param name="s_limit_max" value="202" />
+            <param name="s_limit_min" value="102" />
+            <param name="v_limit_max" value="255" />
+            <param name="v_limit_min" value="118" />
+            <param name="debug_view" value="false" />
+        </node>
+        <node name="rectifier" pkg="nodelet" type="nodelet"
+            args="load image_proc/rectify $(arg nodelet_manager_name_absolute)">
+            <remap from="image_mono" to="image_hsv" />
+            <remap from="image_rect" to="image_hsv_rect" />
+            <param name="~queue_size" value="1" />
+        </node>
+        <node name="erode" pkg="nodelet" type="nodelet"
+            args="load jsk_perception/ErodeMaskImage $(arg nodelet_manager_name_absolute)">
+            <remap from="~input" to="image_hsv" />
+            <remap from="erode/output" to="image_erode" />
+            <rosparam>
+                method: 0
+                size: 1
+                iterations: 1
+            </rosparam>
+        </node>
+        <node name="dilate" pkg="nodelet" type="nodelet"
+            args="load jsk_perception/DilateMaskImage $(arg nodelet_manager_name_absolute)">
+            <remap from="~input" to="image_erode" />
+            <remap from="dilate/output" to="image_dilate" />
+            <rosparam>
+                method: 0
+                size: 3
+                iterations: 1
+            </rosparam>
+        </node>
+        <node name="centroid" pkg="nodelet" type="nodelet"
+            args="load opencv_apps/contour_moments $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_dilate" />
+            <param name="debug_view" value="false" />
+            <param name="use_camera_info" value="false" />
+        </node>
+    </group>
+    <!--include file="$(find image_proc)/launch/image_proc.launch" ns="right">
+        <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
+    </include-->
+    <group ns="right">
+        <node name="resizer" pkg="nodelet" type="nodelet"
+            args="load image_proc/resize $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_raw_large" />
+            <remap from="camera_info" to="camera_info_large" />
+            <remap from="~image" to="image_raw" />
+            <remap from="~camera_info" to="camera_info" />
+            <param name="use_scale" value="$(arg use_scale)" />
+            <param name="scale_width" value="$(arg scale_width)" />
+            <param name="scale_height" value="$(arg scale_height)" />
+            <param name="interpolation" value="$(arg interpolation)" />
+        </node>
+        <node name="debayer" pkg="nodelet" type="nodelet"
+            args="load image_proc/debayer $(arg nodelet_manager_name_absolute)">
+            <remap from="image_mono" to="image_mono_raw" />
+        </node>
+        <node name="hsv" pkg="nodelet" type="nodelet"
+            args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_color" />
+            <remap from="hsv/image" to="image_hsv" />
+            <param name="h_limit_max" value="18" />
+            <param name="h_limit_min" value="9" />
+            <param name="s_limit_max" value="196" />
+            <param name="s_limit_min" value="117" />
+            <param name="v_limit_max" value="255" />
+            <param name="v_limit_min" value="96" />
+            <param name="debug_view" value="false" />
+        </node>
+        <node name="rectifier" pkg="nodelet" type="nodelet"
+            args="load image_proc/rectify $(arg nodelet_manager_name_absolute)">
+            <remap from="image_mono" to="image_hsv" />
+            <remap from="image_rect" to="image_hsv_rect" />
+            <param name="~queue_size" value="1" />
+        </node>
+        <node name="erode" pkg="nodelet" type="nodelet"
+            args="load jsk_perception/ErodeMaskImage $(arg nodelet_manager_name_absolute)">
+            <remap from="~input" to="image_hsv" />
+            <remap from="erode/output" to="image_erode" />
+            <rosparam>
+                method: 0
+                size: 1
+                iterations: 1
+            </rosparam>
+        </node>
+        <node name="dilate" pkg="nodelet" type="nodelet"
+            args="load jsk_perception/DilateMaskImage $(arg nodelet_manager_name_absolute)">
+            <remap from="~input" to="image_erode" />
+            <remap from="dilate/output" to="image_dilate" />
+            <rosparam>
+                method: 0
+                size: 3
+                iterations: 1
+            </rosparam>
+        </node>
+        <node name="centroid" pkg="nodelet" type="nodelet"
+            args="load opencv_apps/contour_moments $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_dilate" />
+            <param name="debug_view" value="false" />
+            <param name="use_camera_info" value="false" />
+        </node>
+    </group>
+    <node name="sync_nodelet" pkg="nodelet" type="nodelet"
+        args="load ball_orbit_estimator/SyncStereoImagesNodelet $(arg nodelet_manager_name)">
+      <param name="approximate_sync" value="true" />
+      <param name="queue_size" value="5" />
+    </node>
+    <!--node name="ball_orbit_estimator" pkg="nodelet" type="nodelet"
+        args="load ball_orbit_estimator/OrbitEstimationNodelet $(arg nodelet_manager_name)">
+    </node-->
+    <!-- <node name="disparity" pkg="nodelet" type="nodelet" -->
+    <!--     args="load stereo_image_proc/disparity $(arg nodelet_manager_name_absolute)"> -->
+    <!--     <remap from="left/image_rect" to="left/dilate/output" /> -->
+    <!--     <remap from="right/image_rect" to="right/dilate/output" /> -->
+    <!--     <param name="approximate_sync" value="true" /> -->
+    <!-- </node> -->
+    <!-- <node name="point_cloud2" pkg="nodelet" type="nodelet" -->
+    <!--     args="load stereo_image_proc/point_cloud2 $(arg nodelet_manager_name_absolute)"> -->
+    <!--     <param name="approximate_sync" value="true" /> -->
+    <!--     <param name="queue_size" value="100" /> -->
+    <!-- </node> -->
+  </group>
+</launch>
