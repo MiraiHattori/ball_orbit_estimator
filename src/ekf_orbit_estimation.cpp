@@ -88,7 +88,7 @@ private:
     {
 #warning using ground tf as origin ロボットが回転したらどうなるのか検討する
       // カメラ姿勢を取得してtransform
-      camera_tf_listener_.lookupTransform("/pointgrey_tf", "ground", ros::Time(0), camera_tf);
+      camera_tf_listener_.lookupTransform("ground", "/pointgrey_tf", ros::Time(0), camera_tf);
     }
     catch (tf::TransformException& ex)
     {
@@ -238,15 +238,17 @@ private:
       double v0 = distance * std::sqrt(-GRAVITY[2]) / std::sqrt(2 * (std::abs(distance + point_rot[2])));
       x_init << point_rot[0], point_rot[1], point_rot[2],                    // 位置
           -v0 * point_rot[0] / distance, -v0 * point_rot[1] / distance, v0;  // 速度
+      std::cerr << distance << " " << v0 << std::endl;
+      std::cerr << x_init.transpose() << std::endl;
       // 雑な値を入れておいたので増やしておく
       Eigen::MatrixXd P_init(6, 6);
       // clang-format off
-      P_init << 1.0, 0.0, 0.0, 100.0, 0.0, 0.0,
-                0.0, 0.5, 0.0, 0.0, 100.0, 0.0,
-                0.0, 0.0, 2.0, 0.0, 0.0, 100.0,
+      P_init << 0.2, 0.0, 0.0, 100.0, 0.0, 0.0,
+                0.0, 0.2, 0.0, 0.0, 100.0, 0.0,
+                0.0, 0.0, 0.2, 0.0, 0.0, 100.0,
                 100.0, 0.0, 0.0, 5.0, 0.0, 0.0,
-                0.0, 100.0, 0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 100.0, 0.0, 0.0, 3.0;
+                0.0, 100.0, 0.0, 0.0, 3.0, 0.0,
+                0.0, 0.0, 100.0, 0.0, 0.0, 5.0;
       // clang-format on
       is_ekf_initialized_ = true;
       ekf.reset(new Filter::EKF(x_init, P_init));
