@@ -156,7 +156,7 @@ private:
     point << point_opt[2], -point_opt[0], -point_opt[1];
     point_rot = q_camera * point + pos_camera;
     // リンク座標を地面の姿勢に変えた系でのボール位置
-    std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
+    // std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
 
     std_msgs::Header header = pixels->header;
     header.frame_id = "ground";
@@ -238,17 +238,25 @@ private:
       double v0 = distance * std::sqrt(-GRAVITY[2]) / std::sqrt(2 * (std::abs(distance + point_rot[2])));
       x_init << point_rot[0], point_rot[1], point_rot[2],                    // 位置
           -v0 * point_rot[0] / distance, -v0 * point_rot[1] / distance, v0;  // 速度
-      std::cerr << distance << " " << v0 << std::endl;
-      std::cerr << x_init.transpose() << std::endl;
+      // std::cerr << distance << " " << v0 << std::endl;
+      // std::cerr << x_init.transpose() << std::endl;
       // 雑な値を入れておいたので増やしておく
       Eigen::MatrixXd P_init(6, 6);
       // clang-format off
-      P_init << 0.2, 0.0, 0.0, 100.0, 0.0, 0.0,
-                0.0, 0.2, 0.0, 0.0, 100.0, 0.0,
-                0.0, 0.0, 0.2, 0.0, 0.0, 100.0,
-                100.0, 0.0, 0.0, 5.0, 0.0, 0.0,
-                0.0, 100.0, 0.0, 0.0, 3.0, 0.0,
-                0.0, 0.0, 100.0, 0.0, 0.0, 5.0;
+      // 分散
+      double x = 0.2;
+      double y = 0.2;
+      double z = 0.2;
+      double vx = 2.0;
+      double vy = 3.0;
+      double vz = 5.0;
+      // xとvxの相関係数は1->xとvxの共分散はsqrt(x)*sqrt(vx)
+      P_init << x                           , 0.0                         , 0.0                         , std::sqrt(x) * std::sqrt(vx), 0.0                         , 0.0,
+                0.0                         , y                           , 0.0                         , 0.0                         , std::sqrt(y) * std::sqrt(vy), 0.0,
+                0.0                         , 0.0                         , z                           , 0.0                         , 0.0                         , std::sqrt(z) * std::sqrt(vz),
+                std::sqrt(x) * std::sqrt(vx), 0.0                         , 0.0                         , vx                          , 0.0                         , 0.0,
+                0.0                         , std::sqrt(y) * std::sqrt(vy), 0.0                         , 0.0                         , vy                          , 0.0,
+                0.0                         , 0.0                         , std::sqrt(z) * std::sqrt(vz), 0.0                         , 0.0                         , vz;
       // clang-format on
       is_ekf_initialized_ = true;
       ekf.reset(new Filter::EKF(x_init, P_init));
