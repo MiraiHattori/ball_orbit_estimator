@@ -57,7 +57,7 @@
             args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_color" />
             <remap from="hsv/image" to="image_hsv" />
-            <param name="h_limit_max" value="16" />
+            <param name="h_limit_max" value="200" />
             <param name="h_limit_min" value="5" />
             <param name="s_limit_max" value="202" />
             <param name="s_limit_min" value="102" />
@@ -121,7 +121,7 @@
             args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_color" />
             <remap from="hsv/image" to="image_hsv" />
-            <param name="h_limit_max" value="18" />
+            <param name="h_limit_max" value="200" />
             <param name="h_limit_min" value="9" />
             <param name="s_limit_max" value="196" />
             <param name="s_limit_min" value="117" />
