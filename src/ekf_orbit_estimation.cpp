@@ -97,12 +97,15 @@ private:
     }
     tf::Quaternion tf_q_camera = camera_tf.getRotation();
     tf::Vector3 tf_pos_camera = camera_tf.getOrigin();
+
     Eigen::Vector3d pos_camera;
     tf::vectorTFToEigen(tf_pos_camera, pos_camera);
     Eigen::Vector3d pos_camera_inv = -pos_camera;
     Eigen::Quaterniond q_camera;
     tf::quaternionTFToEigen(tf_q_camera, q_camera);
     Eigen::Quaterniond q_camera_inv = q_camera.inverse();
+    std::cerr << "pos_camera: " << pos_camera << std::endl;
+    std::cerr << "q_camera: " << q_camera.x() << " " << q_camera.y() << " " << q_camera.z() << " " << q_camera.w() << std::endl;
     // }}}
 
     // {{{ getting raw point
@@ -156,7 +159,7 @@ private:
     point << point_opt[2], -point_opt[0], -point_opt[1];
     point_rot = q_camera * point + pos_camera;
     // リンク座標を地面の姿勢に変えた系でのボール位置
-    // std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
+    std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
 
     std_msgs::Header header = pixels->header;
     header.frame_id = "ground";
@@ -250,13 +253,12 @@ private:
       double vx = 2.0;
       double vy = 3.0;
       double vz = 5.0;
-      // xとvxの相関係数は1->xとvxの共分散はsqrt(x)*sqrt(vx)
-      P_init << x                           , 0.0                         , 0.0                         , std::sqrt(x) * std::sqrt(vx), 0.0                         , 0.0,
-                0.0                         , y                           , 0.0                         , 0.0                         , std::sqrt(y) * std::sqrt(vy), 0.0,
-                0.0                         , 0.0                         , z                           , 0.0                         , 0.0                         , std::sqrt(z) * std::sqrt(vz),
-                std::sqrt(x) * std::sqrt(vx), 0.0                         , 0.0                         , vx                          , 0.0                         , 0.0,
-                0.0                         , std::sqrt(y) * std::sqrt(vy), 0.0                         , 0.0                         , vy                          , 0.0,
-                0.0                         , 0.0                         , std::sqrt(z) * std::sqrt(vz), 0.0                         , 0.0                         , vz;
+      P_init << x, 0.0, 0.0, 10.0, 0.0, 0.0,
+                0.0, y, 0.0, 0.0, 10.0, 0.0,
+                0.0, 0.0, z, 0.0, 0.0, 10.0,
+                10.0, 0.0, 0.0, vx, 0.0, 0.0,
+                0.0, 10.0, 0.0, 0.0, vy, 0.0,
+                0.0, 0.0, 10.0, 0.0, 0.0, vz;
       // clang-format on
       is_ekf_initialized_ = true;
       ekf.reset(new Filter::EKF(x_init, P_init));
@@ -289,8 +291,10 @@ private:
       state.pos_and_vel_covariance = cov_msg;
       pub_ball_state_.publish(state);
 
-      // std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
-      //           << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
+      std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
+                << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
+      std::cerr << "coeff: " << std::endl;
+      std::cerr << value.second << std::endl;
       // }}}
     }
   }

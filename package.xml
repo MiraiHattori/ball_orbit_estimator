@@ -17,6 +17,7 @@
   <depend>message_generation</depend>
   <depend>sensor_msgs</depend>
   <depend>ball_state_msgs</depend>
+  <depend>visualization_msgs</depend>
   <depend>image_transport</depend>
   <depend>opencv_apps</depend>
   <depend>cv_bridge</depend>
