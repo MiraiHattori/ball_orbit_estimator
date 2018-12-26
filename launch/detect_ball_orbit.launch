@@ -39,8 +39,8 @@
       <param name="frame_id_r" value="camera_r" />
       <param name="serial_l" value="$(arg camera_serial_l)" />
       <param name="serial_r" value="$(arg camera_serial_r)" />
-      <param name="camera_id_l" value="0" />
-      <param name="camera_id_r" value="1" />
+      <param name="camera_id_l" value="1" />
+      <param name="camera_id_r" value="0" />
 
       <!-- When unspecified, the driver will use the default framerate as given by the
            camera itself. Use this parameter to override that value for cameras capable of
