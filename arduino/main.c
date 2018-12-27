@@ -37,14 +37,16 @@ int main(void)
   //制御レジスタB
   TCCR1B = 0b00011010;  // 11:高速PWM動作, 010:分周1/8 <-- もともと16MHzなので，これで2MHz
 
+  // Hz
+  int pointgrey_trigger_hz = 100;
   //最大値
-  ICR1 = 20000;
+  ICR1 = 2000000 / pointgrey_trigger_hz;
   // ICR1 = 20000;  // 160Hz //0から数える. この値が40000だとしたら全体時間 65ms <--
   // 2MHzのクロックで40000カウントしたら立ち上がる 2MHz/40000_50Hz
   // 0.000001 * 65000 : 65ms
 
   // HIGHの時間(クロック数)
-  OCR1A = 18000;
+  OCR1A = 1800000 / pointgrey_trigger_hz;
   // OCR1A = 18000;  // 0から数える. High時間 32.5ms <-- duty比を決める（ICR1の半分ならduty比0.5）
   // 0.000001 * 32500 : 32.5ms
   // OCR1AはPB1ピン
