@@ -264,6 +264,7 @@ private:
                 0.0, 10.0, 0.0, 0.0, vy, 0.0,
                 0.0, 0.0, 10.0, 0.0, 0.0, vz;
       // clang-format on
+      is_ekf_initialized_ = true;
       ekf.reset(new Filter::EKF(x_init, P_init));
     }
 
