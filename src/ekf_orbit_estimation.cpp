@@ -160,6 +160,10 @@ private:
     point_rot = q_camera * point + pos_camera;
     // リンク座標を地面の姿勢に変えた系でのボール位置
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
+    if (point_rot[0] < 0.0 or point_rot[0] > 10.0 or point_rot[2] < 0.0 or point_rot[2] > 2.0) {
+        std::cerr << "[ball_orbit_estimator] invalid ball point" << std::endl;
+        return;
+    }
 
     std_msgs::Header header = pixels->header;
     header.frame_id = "ground";
@@ -260,10 +264,6 @@ private:
                 0.0, 10.0, 0.0, 0.0, vy, 0.0,
                 0.0, 0.0, 10.0, 0.0, 0.0, vz;
       // clang-format on
-#warning this is a patch
-      if (point_rot[0] < 10.0 and point_rot[0] >= 5.0) {
-          is_ekf_initialized_ = true;
-      }
       ekf.reset(new Filter::EKF(x_init, P_init));
     }
 
