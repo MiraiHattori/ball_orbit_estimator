@@ -197,7 +197,7 @@ private:
     std::function<Eigen::VectorXd(Eigen::VectorXd)> f = [F](Eigen::VectorXd x) { return F * x; };
     Eigen::MatrixXd G = Eigen::MatrixXd::Identity(6, 6);
     // 誤差を入れた(入れないと正定値性失う可能性)
-    Eigen::MatrixXd Q = 0.01 * Eigen::MatrixXd::Identity(6, 6);
+    Eigen::MatrixXd Q = 0.00001 * Eigen::MatrixXd::Identity(6, 6);
     Eigen::VectorXd u(6);
     u.segment(0, 3) = GRAVITY * delta_t * delta_t / 2.0;
     u.segment(3, 3) = GRAVITY * delta_t;
@@ -251,18 +251,18 @@ private:
       Eigen::MatrixXd P_init(6, 6);
       // clang-format off
       // 分散
-      double x = 0.2;
-      double y = 0.2;
-      double z = 0.2;
-      double vx = 2.0;
-      double vy = 3.0;
+      double x = 2.0;
+      double y = 1.0;
+      double z = 1.0;
+      double vx = 10.0;
+      double vy = 2.0;
       double vz = 5.0;
-      P_init << x, 0.0, 0.0, 10.0, 0.0, 0.0,
-                0.0, y, 0.0, 0.0, 10.0, 0.0,
-                0.0, 0.0, z, 0.0, 0.0, 10.0,
-                10.0, 0.0, 0.0, vx, 0.0, 0.0,
-                0.0, 10.0, 0.0, 0.0, vy, 0.0,
-                0.0, 0.0, 10.0, 0.0, 0.0, vz;
+      P_init << x, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, y, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, z, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, vx, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, vy, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, vz;
       // clang-format on
       is_ekf_initialized_ = true;
       ekf.reset(new Filter::EKF(x_init, P_init));
