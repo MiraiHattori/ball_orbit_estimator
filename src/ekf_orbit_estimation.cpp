@@ -260,7 +260,10 @@ private:
                 0.0, 10.0, 0.0, 0.0, vy, 0.0,
                 0.0, 0.0, 10.0, 0.0, 0.0, vz;
       // clang-format on
-      is_ekf_initialized_ = true;
+#warning this is a patch
+      if (point_rot[0] < 10.0 and point_rot[0] >= 5.0) {
+          is_ekf_initialized_ = true;
+      }
       ekf.reset(new Filter::EKF(x_init, P_init));
     }
 
