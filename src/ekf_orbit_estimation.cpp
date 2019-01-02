@@ -104,7 +104,7 @@ private:
     Eigen::Quaterniond q_camera;
     tf::quaternionTFToEigen(tf_q_camera, q_camera);
     Eigen::Quaterniond q_camera_inv = q_camera.inverse();
-    std::cerr << "pos_camera: " << pos_camera << std::endl;
+    std::cerr << "pos_camera: " << pos_camera.transpose() << std::endl;
     std::cerr << "q_camera: " << q_camera.x() << " " << q_camera.y() << " " << q_camera.z() << " " << q_camera.w() << std::endl;
     // }}}
 
