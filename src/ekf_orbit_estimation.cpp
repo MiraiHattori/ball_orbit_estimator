@@ -233,7 +233,7 @@ private:
       return H;
     };
     // 画素のばらつき
-    Eigen::MatrixXd R = 2.0 * Eigen::MatrixXd::Identity(4, 4);
+    Eigen::MatrixXd R = 4.0 * Eigen::MatrixXd::Identity(4, 4);
 
     if (not is_ekf_initialized_)
     {
@@ -254,9 +254,9 @@ private:
       double x = 2.0;
       double y = 1.0;
       double z = 1.0;
-      double vx = 10.0;
+      double vx = 2.0;
       double vy = 2.0;
-      double vz = 5.0;
+      double vz = 2.0;
       P_init << x, 0.0, 0.0, 0.0, 0.0, 0.0,
                 0.0, y, 0.0, 0.0, 0.0, 0.0,
                 0.0, 0.0, z, 0.0, 0.0, 0.0,
