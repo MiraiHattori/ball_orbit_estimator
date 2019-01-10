@@ -233,7 +233,7 @@ private:
       return H;
     };
     // 画素のばらつき
-    Eigen::MatrixXd R = 4.0 * Eigen::MatrixXd::Identity(4, 4);
+    Eigen::MatrixXd R = 2.0 * Eigen::MatrixXd::Identity(4, 4);
 
     if (not is_ekf_initialized_)
     {
