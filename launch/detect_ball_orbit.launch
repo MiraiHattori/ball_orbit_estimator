@@ -1,12 +1,12 @@
 <launch>
   <!-- Common parameters -->
   <arg name="camera_name" default="pointgrey" />
-  <arg name="frame_rate" default="170" />
+  <arg name="frame_rate" default="100" />
   <arg name="exposure"      value="0.0035" />
   <arg name="auto_exposure"      value="false" />
   <arg name="auto_gain"     value="false" />
   <arg name="gain"          value="10" />
-  <arg name="enable_trigger"          value="true" />
+  <arg name="enable_trigger"          default="false" />
   <arg name="trigger_source"          value="GPIO0" />
   <arg name="trigger_polarity"          value="0" />
   <arg name="gamma"          value="0.6" />
