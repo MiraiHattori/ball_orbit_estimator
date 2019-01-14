@@ -11,6 +11,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <ball_state_msgs/PosAndVelWithCovarianceStamped.h>
+#include <geometry_msgs/PointStamped.h>
 #include <opencv_apps/Point2DArrayStamped.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
@@ -49,7 +50,7 @@ private:
   void connectCb()
   {
     boost::mutex::scoped_lock scoped_lock(connect_mutex_);
-    if (pub_ball_state_.getNumSubscribers() == 0)
+    if (pub_ball_state_.getNumSubscribers() == 0 and pub_ball_point_.getNumSubscribers() == 0)
     {
       if (pub_thread_)
       {
@@ -71,6 +72,7 @@ private:
     boost::mutex::scoped_lock scoped_lock(connect_mutex_);
     ros::SubscriberStatusCallback cb = boost::bind(&OrbitEstimationNodelet::connectCb, this);
     pub_ball_state_ = getMTNodeHandle().advertise<ball_state_msgs::PosAndVelWithCovarianceStamped>("/pointgrey/estimated_ball_state", 1, cb, cb);
+    pub_ball_point_= getMTNodeHandle().advertise<geometry_msgs::PointStamped>("/pointgrey/estimated_ball_point", 1, cb, cb);
 
     // EKFの初期化はコールバック内で行う
   }
@@ -297,6 +299,11 @@ private:
       state.pos_and_vel_covariance = cov_msg;
       pub_ball_state_.publish(state);
 
+      geometry_msgs::PointStamped estimated_point;
+      estimated_point.header = header;
+      estimated_point.point = point_msg;
+      pub_ball_point_.publish(estimated_point);
+
       std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
                 << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
       std::cerr << "coeff: " << std::endl;
@@ -373,6 +380,7 @@ private:
   tf::TransformListener camera_tf_listener_;
   ros::Subscriber sub_pixels_;
   ros::Publisher pub_ball_state_;
+  ros::Publisher pub_ball_point_;
   std::unique_ptr<sensor_msgs::CameraInfo> ci_ = nullptr;
   std::unique_ptr<sensor_msgs::CameraInfo> rci_ = nullptr;
   bool is_ekf_initialized_ = false;
