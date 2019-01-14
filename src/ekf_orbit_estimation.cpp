@@ -116,6 +116,7 @@ private:
     pixel_l[1] = pixels->points.at(0).y;
     pixel_r[0] = pixels->points.at(1).x;
     pixel_r[1] = pixels->points.at(1).y;
+    std::cerr << "pixel: " << pixel_l[0] << " " << pixel_l[1] << " " << pixel_r[0] << " " << pixel_r[1] << std::endl;
 
     Eigen::MatrixXd PL(3, 4);
     Eigen::MatrixXd PR(3, 4);
@@ -176,6 +177,7 @@ private:
     t_ = header.stamp;
     ros::Duration diff = t_ - t;
     double delta_t = diff.toSec();
+    std::cerr << "delta_t: " << delta_t << std::endl;
     if (delta_t < 0.0)
     {
       std::cerr << "ball_orbit_estimator: orbit estimation time stamp is inverted" << std::endl;
