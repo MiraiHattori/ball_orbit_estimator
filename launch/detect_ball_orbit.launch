@@ -35,8 +35,8 @@
     <!-- Both cameras are not loaded into one nodelet manager to avoid the namespacing issue. -->
     <node name="pointgrey_nodelet" pkg="nodelet" type="nodelet"
           args="load pointgrey_camera_driver/PointGreyStereoCameraSPNodelet $(arg nodelet_manager_name)">
-      <param name="frame_id_l" value="camera_l" />
-      <param name="frame_id_r" value="camera_r" />
+      <param name="frame_id_l" value="/pointgrey_tf_opt" />
+      <param name="frame_id_r" value="/pointgrey_tf_opt" />
       <param name="serial_l" value="$(arg camera_serial_l)" />
       <param name="serial_r" value="$(arg camera_serial_r)" />
       <param name="camera_id_l" value="1" />
@@ -194,16 +194,14 @@
     <node name="ball_orbit_estimator" pkg="nodelet" type="nodelet"
         args="load ball_orbit_estimator/OrbitEstimationNodelet $(arg nodelet_manager_name)">
     </node>
-    <!-- <node name="disparity" pkg="nodelet" type="nodelet" -->
-    <!--     args="load stereo_image_proc/disparity $(arg nodelet_manager_name_absolute)"> -->
-    <!--     <remap from="left/image_rect" to="left/dilate/output" /> -->
-    <!--     <remap from="right/image_rect" to="right/dilate/output" /> -->
-    <!--     <param name="approximate_sync" value="true" /> -->
-    <!-- </node> -->
-    <!-- <node name="point_cloud2" pkg="nodelet" type="nodelet" -->
-    <!--     args="load stereo_image_proc/point_cloud2 $(arg nodelet_manager_name_absolute)"> -->
-    <!--     <param name="approximate_sync" value="true" /> -->
-    <!--     <param name="queue_size" value="100" /> -->
-    <!-- </node> -->
+    <node name="disparity" pkg="nodelet" type="nodelet"
+        args="load stereo_image_proc/disparity $(arg nodelet_manager_name_absolute)">
+        <param name="approximate_sync" value="true" />
+    </node>
+    <node name="point_cloud2" pkg="nodelet" type="nodelet"
+        args="load stereo_image_proc/point_cloud2 $(arg nodelet_manager_name_absolute)">
+        <param name="approximate_sync" value="true" />
+        <param name="queue_size" value="100" />
+    </node>
   </group>
 </launch>
