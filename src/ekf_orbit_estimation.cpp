@@ -159,6 +159,7 @@ private:
     Eigen::VectorXd point_rot(3);
     point_opt << result.at<float>(0, 0) / result.at<float>(3, 0), result.at<float>(1, 0) / result.at<float>(3, 0),
         result.at<float>(2, 0) / result.at<float>(3, 0);
+    std::cerr << "optical_point(norm,x,y,z): " << point_opt.norm() << " " << point_opt[0] << " " << point_opt[1] << " " << point_opt[2] << std::endl;
     point << point_opt[2], -point_opt[0], -point_opt[1];
     point_rot = q_camera * (point + pos_camera);
     // リンク座標を地面の姿勢に変えた系でのボール位置
