@@ -160,7 +160,7 @@ private:
     point_opt << result.at<float>(0, 0) / result.at<float>(3, 0), result.at<float>(1, 0) / result.at<float>(3, 0),
         result.at<float>(2, 0) / result.at<float>(3, 0);
     point << point_opt[2], -point_opt[0], -point_opt[1];
-    point_rot = q_camera * point + pos_camera;
+    point_rot = q_camera * (point + pos_camera);
     // リンク座標を地面の姿勢に変えた系でのボール位置
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
     if (point_rot[0] < 0.0 or point_rot[0] > 10.0 or point_rot[2] < 0.0 or point_rot[2] > 4.0) {
