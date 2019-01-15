@@ -66,9 +66,6 @@
       <remap from="right/camera_info" to="right/camera_info_large" />
     </node>
 
-    <!--include file="$(find image_proc)/launch/image_proc.launch" ns="left">
-        <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
-    </include-->
     <group ns="left">
         <node name="resizer" pkg="nodelet" type="nodelet"
             args="load image_proc/resize $(arg nodelet_manager_name_absolute)">
@@ -81,10 +78,9 @@
             <param name="scale_height" value="$(arg scale_height)" />
             <param name="interpolation" value="$(arg interpolation)" />
         </node>
-        <node name="debayer" pkg="nodelet" type="nodelet"
-            args="load image_proc/debayer $(arg nodelet_manager_name_absolute)">
-            <remap from="image_mono" to="image_mono_raw" />
-        </node>
+        <include file="$(find image_proc)/launch/image_proc.launch">
+            <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
+        </include>
         <node name="hsv" pkg="nodelet" type="nodelet"
             args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_color" />
@@ -130,9 +126,6 @@
             <param name="use_camera_info" value="false" />
         </node>
     </group>
-    <!--include file="$(find image_proc)/launch/image_proc.launch" ns="right">
-        <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
-    </include-->
     <group ns="right">
         <node name="resizer" pkg="nodelet" type="nodelet"
             args="load image_proc/resize $(arg nodelet_manager_name_absolute)">
@@ -145,10 +138,9 @@
             <param name="scale_height" value="$(arg scale_height)" />
             <param name="interpolation" value="$(arg interpolation)" />
         </node>
-        <node name="debayer" pkg="nodelet" type="nodelet"
-            args="load image_proc/debayer $(arg nodelet_manager_name_absolute)">
-            <remap from="image_mono" to="image_mono_raw" />
-        </node>
+        <include file="$(find image_proc)/launch/image_proc.launch">
+            <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
+        </include>
         <node name="hsv" pkg="nodelet" type="nodelet"
             args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_color" />
