@@ -52,7 +52,7 @@
                             0 0 0 0 0.01 0
                             0 0 0 0 0 0.01)
                          ))
-     (send msg :header :frame_id "ground")
+     (send msg :header :frame_id "odom")
      (send msg :header :stamp (ros::time-now))
 
      (print "ball_state")
@@ -72,7 +72,7 @@
             (setq sim-z (+ z (* vz sim-t) (* -4.9 sim-t sim-t)))
             (setq sim-t (+ sim-t (/ 1.0 rate)))
             (setq marker (instance visualization_msgs::Marker :init))
-            (send marker :header :frame_id "ground")
+            (send marker :header :frame_id "odom")
             (send marker :header :stamp (ros::time-now))
             (send marker :id (setq marker-id (+ marker-id 1)))
             (send marker :type 2) ;; this is SPHERE according to visualization_msgs/msg/Marker.msg

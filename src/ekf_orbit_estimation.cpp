@@ -26,7 +26,7 @@
 namespace ball_orbit_estimator
 {
 /*
- * @brief groundのtfから見たボールの軌道をpublishするnodelet
+ * @brief odomのtfから見たボールの軌道をpublishするnodelet
  * 左右眼画像2枚を受け取り，ボールの予測軌道をEKFで返す
  */
 class OrbitEstimationNodelet : public nodelet::Nodelet
@@ -88,9 +88,9 @@ private:
     tf::StampedTransform camera_tf;
     try
     {
-#warning using ground tf as origin ロボットが回転したらどうなるのか検討する
+#warning using odom tf as origin ロボットが回転したらどうなるのか検討する
       // カメラ姿勢を取得してtransform
-      camera_tf_listener_.lookupTransform("ground", "/pointgrey_tf", ros::Time(0), camera_tf);
+      camera_tf_listener_.lookupTransform("odom", "/pointgrey_tf", ros::Time(0), camera_tf);
     }
     catch (tf::TransformException& ex)
     {
@@ -170,7 +170,7 @@ private:
     }
 
     std_msgs::Header header = pixels->header;
-    header.frame_id = "ground";
+    header.frame_id = "odom";
     if (not is_time_initialized_)
     {
       t_ = header.stamp;
@@ -195,7 +195,7 @@ private:
      * カメラ姿勢(q_camera)と画面上でのボール中心(lx, ly, rx, ry)のあるピクセルEKF
      */
     const Eigen::VectorXd GRAVITY((Eigen::VectorXd(3) << 0, 0, -9.80665).finished());
-    // 状態xはground座標系でのボールの位置と速度を6次元並べたもの
+    // 状態xはodom座標系でのボールの位置と速度を6次元並べたもの
     Eigen::MatrixXd F = Eigen::MatrixXd::Identity(6, 6);
     F.block(0, 3, 3, 3) = delta_t * Eigen::MatrixXd::Identity(3, 3);
 
