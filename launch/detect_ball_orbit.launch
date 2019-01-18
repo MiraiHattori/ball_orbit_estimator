@@ -146,7 +146,7 @@
             <remap from="image" to="image_color" />
             <remap from="hsv/image" to="image_hsv" />
             <param name="h_limit_max" value="18" />
-            <param name="h_limit_min" value="9" />
+            <param name="h_limit_min" value="4" />
             <param name="s_limit_max" value="196" />
             <param name="s_limit_min" value="117" />
             <param name="v_limit_max" value="255" />
