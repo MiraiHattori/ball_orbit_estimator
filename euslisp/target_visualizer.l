@@ -5,9 +5,10 @@
 (ros::roseus "target-visualizer")
 (defclass cb-class
   :super propertied-object
-  :slots ())
+  :slots (marker-id))
 (defmethod cb-class
   (:init ()
+         (setq marker-id 0)
          (ros::advertise "/pointgrey/orbit_simulation"
                   visualization_msgs::MarkerArray)
          (ros::subscribe "/pointgrey/estimated_ball_state" ball_state_msgs::PosAndVelWithCovarianceStamped #'send self :update-cb))
@@ -25,7 +26,6 @@
     (setq sim-t 0.0)
     (setq sim-z z)
     (setq rate 100)
-    (setq marker-id 0)
     (setq var-trace 0.0)
     (dotimes (i 6)
       (setq var-trace (+ var-trace (elt var (+ (* i 6) i)))))
