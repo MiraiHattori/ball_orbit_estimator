@@ -78,9 +78,12 @@
             <param name="scale_height" value="$(arg scale_height)" />
             <param name="interpolation" value="$(arg interpolation)" />
         </node>
-        <include file="$(find image_proc)/launch/image_proc.launch">
+        <node name="debayer" pkg="nodelet" type="nodelet"
+            args="load image_proc/debayer $(arg nodelet_manager_name_absolute)">
+        </node>
+        <!--include file="$(find image_proc)/launch/image_proc.launch">
             <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
-        </include>
+        </include-->
         <node name="hsv" pkg="nodelet" type="nodelet"
             args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_color" />
@@ -138,9 +141,12 @@
             <param name="scale_height" value="$(arg scale_height)" />
             <param name="interpolation" value="$(arg interpolation)" />
         </node>
-        <include file="$(find image_proc)/launch/image_proc.launch">
+        <!--include file="$(find image_proc)/launch/image_proc.launch">
             <arg name="manager" value="$(arg nodelet_manager_name_absolute)" />
-        </include>
+        </include-->
+        <node name="debayer" pkg="nodelet" type="nodelet"
+            args="load image_proc/debayer $(arg nodelet_manager_name_absolute)">
+        </node>
         <node name="hsv" pkg="nodelet" type="nodelet"
             args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_color" />
