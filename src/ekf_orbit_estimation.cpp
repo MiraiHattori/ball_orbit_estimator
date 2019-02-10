@@ -219,9 +219,7 @@ private:
     std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, rot_camera_inv, pos_camera_inv](Eigen::VectorXd x) {
       Eigen::VectorXd z_(4);
       // x.segment(0, 3) extracts ball pos
-      std::cerr << "x.segment(0, 3) " << x.segment(0, 3).transpose() << std::endl;
       Eigen::VectorXd x_rot = rot_camera_inv * x.segment(0, 3) + pos_camera_inv;
-      std::cerr << "x_rot " << x_rot.transpose() << std::endl;
       double X = x_rot[0];
       double Y = x_rot[1];
       double Z = x_rot[2];
