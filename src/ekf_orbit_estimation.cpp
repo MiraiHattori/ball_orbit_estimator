@@ -90,7 +90,7 @@ private:
     {
 #warning using odom tf as origin ロボットが回転したらどうなるのか検討する
       // カメラ姿勢を取得してtransform
-      camera_tf_listener_.lookupTransform("odom", "/pointgrey_tf", ros::Time(0), camera_tf);
+      camera_tf_listener_.lookupTransform("odom", "/pointgrey_tf_opt", ros::Time(0), camera_tf);
     }
     catch (tf::TransformException& ex)
     {
@@ -99,15 +99,23 @@ private:
     }
     tf::Quaternion tf_q_camera = camera_tf.getRotation();
     tf::Vector3 tf_pos_camera = camera_tf.getOrigin();
+    tf::Quaternion tf_q_camera_inv = camera_tf.inverse().getRotation();
+    tf::Vector3 tf_pos_camera_inv = camera_tf.inverse().getOrigin();
 
-    Eigen::Vector3d pos_camera;
+    Eigen::Vector3d pos_camera, pos_camera_inv;
     tf::vectorTFToEigen(tf_pos_camera, pos_camera);
-    Eigen::Vector3d pos_camera_inv = -pos_camera;
-    Eigen::Quaterniond q_camera;
+    tf::vectorTFToEigen(tf_pos_camera_inv, pos_camera_inv);
+
+    Eigen::Quaterniond q_camera, q_camera_inv;
     tf::quaternionTFToEigen(tf_q_camera, q_camera);
-    Eigen::Quaterniond q_camera_inv = q_camera.inverse();
+    tf::quaternionTFToEigen(tf_q_camera_inv, q_camera_inv);
+
+    Eigen::Matrix3d rot_camera = q_camera.normalized().toRotationMatrix();
+    Eigen::Matrix3d rot_camera_inv = q_camera_inv.normalized().toRotationMatrix();
     std::cerr << "pos_camera: " << pos_camera.transpose() << std::endl;
+    std::cerr << "pos_camera_inv: " << pos_camera_inv.transpose() << std::endl;
     std::cerr << "q_camera: " << q_camera.x() << " " << q_camera.y() << " " << q_camera.z() << " " << q_camera.w() << std::endl;
+    std::cerr << "q_camera_inv: " << q_camera_inv.x() << " " << q_camera_inv.y() << " " << q_camera_inv.z() << " " << q_camera_inv.w() << std::endl;
     // }}}
 
     // {{{ getting raw point
@@ -154,14 +162,14 @@ private:
 
     // 光学座標系でのボール位置
     Eigen::VectorXd point_opt(3);
-    // リンク座標系でのボール位置
-    Eigen::VectorXd point(3);
-    Eigen::VectorXd point_rot(3);
     point_opt << result.at<float>(0, 0) / result.at<float>(3, 0), result.at<float>(1, 0) / result.at<float>(3, 0),
         result.at<float>(2, 0) / result.at<float>(3, 0);
     std::cerr << "optical_point(norm,x,y,z): " << point_opt.norm() << " " << point_opt[0] << " " << point_opt[1] << " " << point_opt[2] << std::endl;
-    point << point_opt[2], -point_opt[0], -point_opt[1];
-    point_rot = q_camera * (point + pos_camera);
+
+    // odom座標系でのボール位置
+    // Eigen::VectorXd point_rot = q_camera * point_opt + pos_camera;
+    Eigen::VectorXd point_rot = rot_camera * point_opt + pos_camera;
+
     // リンク座標を地面の姿勢に変えた系でのボール位置
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
     if (point_rot[0] < 0.0 or point_rot[0] > 10.0 or point_rot[2] < 0.0 or point_rot[2] > 4.0) {
@@ -202,43 +210,79 @@ private:
     std::function<Eigen::VectorXd(Eigen::VectorXd)> f = [F](Eigen::VectorXd x) { return F * x; };
     Eigen::MatrixXd G = Eigen::MatrixXd::Identity(6, 6);
     // 誤差を入れた(入れないと正定値性失う可能性)
-    Eigen::MatrixXd Q = 0.00001 * Eigen::MatrixXd::Identity(6, 6);
+    Eigen::MatrixXd Q = 0.001 * Eigen::MatrixXd::Identity(6, 6);
     Eigen::VectorXd u(6);
     u.segment(0, 3) = GRAVITY * delta_t * delta_t / 2.0;
     u.segment(3, 3) = GRAVITY * delta_t;
     Eigen::VectorXd z(4);
     z << pixel_l[0], pixel_l[1], pixel_r[0], pixel_r[1];
-    std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, q_camera_inv, pos_camera_inv](Eigen::VectorXd x) {
+    std::function<Eigen::VectorXd(Eigen::VectorXd)> h = [PL, PR, rot_camera_inv, pos_camera_inv](Eigen::VectorXd x) {
       Eigen::VectorXd z_(4);
       // x.segment(0, 3) extracts ball pos
-      Eigen::VectorXd x_rot = q_camera_inv * x.segment(0, 3) + pos_camera_inv;
+      std::cerr << "x.segment(0, 3) " << x.segment(0, 3).transpose() << std::endl;
+      Eigen::VectorXd x_rot = rot_camera_inv * x.segment(0, 3) + pos_camera_inv;
+      std::cerr << "x_rot " << x_rot.transpose() << std::endl;
       double X = x_rot[0];
       double Y = x_rot[1];
       double Z = x_rot[2];
-      z_ << -PL(0, 0) * Y / X + PL(0, 2), -PL(1, 1) * Z / X + PL(1, 2), -PR(0, 0) * Y / X + PR(0, 2) + PR(0, 3) / X,
-          -PR(1, 1) * Z / X + PR(1, 2);
+      z_ << PL(0, 0) * X / Z + PL(0, 2), PL(1, 1) * Y / Z + PL(1, 2), PR(0, 0) * X / Z + PR(0, 2) + PR(0, 3) / Z,
+          PR(1, 1) * Y / Z + PR(1, 2);
       return z_;
     };
-    std::function<Eigen::MatrixXd(Eigen::VectorXd)> dh = [PL, PR, q_camera_inv,
+    std::function<Eigen::MatrixXd(Eigen::VectorXd)> dh = [PL, PR, rot_camera_inv,
                                                           pos_camera_inv](Eigen::VectorXd x_filtered_pre) {
       // x_filtered_pre.segment(0, 3) extracts ball pos
-      Eigen::VectorXd x_rot = q_camera_inv * x_filtered_pre.segment(0, 3) + pos_camera_inv;
-      double X = x_rot[0];
-      double Y = x_rot[1];
-      double Z = x_rot[2];
+      Eigen::Matrix3d R = rot_camera_inv;
+      double x = x_filtered_pre[0];
+      double y = x_filtered_pre[1];
+      double z = x_filtered_pre[2];
+      double x_rot = R(0, 0) * x + R(0, 1) * y + R(0, 2) * z + pos_camera_inv[0];
+      double y_rot = R(1, 0) * x + R(1, 1) * y + R(1, 2) * z + pos_camera_inv[1];
+      double z_rot = R(2, 0) * x + R(2, 1) * y + R(2, 2) * z + pos_camera_inv[2];
+
+      double w_l = z_rot;
+      double X_l = x_rot * PL(0, 0) + z_rot * PL(0, 2); // w_l * x_l
+      double Y_l = y_rot * PL(1, 1) + z_rot * PL(1, 2); // w_l * y_l
+      double w_r = z_rot;
+      double X_r = x_rot * PR(0, 0) + z_rot * PR(0, 2) + PR(0, 3); // w_r * x_r
+      double Y_r = y_rot * PR(1, 1) + z_rot * PR(1, 2); // w_r * y_r
+      // 偏微分
+      double w_l_x = R(2, 0);
+      double w_l_y = R(2, 1);
+      double w_l_z = R(2, 2);
+      double X_l_x = R(0, 0) * PL(0, 0) + R(2, 0) * PL(0, 2);
+      double X_l_y = R(0, 1) * PL(0, 0) + R(2, 1) * PL(0, 2);
+      double X_l_z = R(0, 2) * PL(0, 0) + R(2, 2) * PL(0, 2);
+      double Y_l_x = R(1, 0) * PL(1, 1) + R(2, 0) * PL(1, 2);
+      double Y_l_y = R(1, 1) * PL(1, 1) + R(2, 1) * PL(1, 2);
+      double Y_l_z = R(1, 2) * PL(1, 1) + R(2, 2) * PL(1, 2);
+      double w_r_x = R(2, 0);
+      double w_r_y = R(2, 1);
+      double w_r_z = R(2, 2);
+      double X_r_x = R(0, 0) * PR(0, 0) + R(2, 0) * PR(0, 2);
+      double X_r_y = R(0, 1) * PR(0, 0) + R(2, 1) * PR(0, 2);
+      double X_r_z = R(0, 2) * PR(0, 0) + R(2, 2) * PR(0, 2);
+      double Y_r_x = R(1, 0) * PR(1, 1) + R(2, 0) * PR(1, 2);
+      double Y_r_y = R(1, 1) * PR(1, 1) + R(2, 1) * PR(1, 2);
+      double Y_r_z = R(1, 2) * PR(1, 1) + R(2, 2) * PR(1, 2);
+
       Eigen::MatrixXd H = Eigen::MatrixXd::Zero(4, 6);
-      H(0, 0) = PL(0, 0) * Y / (X * X);
-      H(0, 1) = -PL(0, 0) / X;
-      H(1, 0) = PL(1, 1) * Z / (X * X);
-      H(1, 2) = -PL(1, 1) / X;
-      H(2, 0) = PR(0, 0) * Y / (X * X) - PR(0, 3) / (X * X);
-      H(2, 1) = -PR(0, 0) / X;
-      H(3, 0) = PR(1, 1) * Z / (X * X);
-      H(3, 2) = -PR(1, 1) / X;
+      H(0, 0) = (X_l_x * w_l - X_l * w_l_x) / (w_l * w_l);
+      H(0, 1) = (X_l_y * w_l - X_l * w_l_y) / (w_l * w_l);
+      H(0, 2) = (X_l_z * w_l - X_l * w_l_z) / (w_l * w_l);
+      H(1, 0) = (Y_l_x * w_l - Y_l * w_l_x) / (w_l * w_l);
+      H(1, 1) = (Y_l_y * w_l - Y_l * w_l_y) / (w_l * w_l);
+      H(1, 2) = (Y_l_z * w_l - Y_l * w_l_z) / (w_l * w_l);
+      H(2, 0) = (X_r_x * w_r - X_r * w_r_x) / (w_r * w_r);
+      H(2, 1) = (X_r_y * w_r - X_r * w_r_y) / (w_r * w_r);
+      H(2, 2) = (X_r_z * w_r - X_r * w_r_z) / (w_r * w_r);
+      H(1, 0) = (Y_r_x * w_r - Y_r * w_r_x) / (w_r * w_r);
+      H(1, 1) = (Y_r_y * w_r - Y_r * w_r_y) / (w_r * w_r);
+      H(1, 2) = (Y_r_z * w_r - Y_r * w_r_z) / (w_r * w_r);
       return H;
     };
     // 画素のばらつき
-    Eigen::MatrixXd R = 2.0 * Eigen::MatrixXd::Identity(4, 4);
+    Eigen::MatrixXd R = 1.0 * Eigen::MatrixXd::Identity(4, 4);
 
     if (not is_ekf_initialized_)
     {
@@ -259,9 +303,9 @@ private:
       double x = 2.0;
       double y = 1.0;
       double z = 1.0;
-      double vx = 2.0;
-      double vy = 2.0;
-      double vz = 2.0;
+      double vx = 4.0;
+      double vy = 4.0;
+      double vz = 4.0;
       P_init << x, 0.0, 0.0, 0.0, 0.0, 0.0,
                 0.0, y, 0.0, 0.0, 0.0, 0.0,
                 0.0, 0.0, z, 0.0, 0.0, 0.0,
@@ -283,6 +327,7 @@ private:
       point_msg.x = (value.first)[0];
       point_msg.y = (value.first)[1];
       point_msg.z = (value.first)[2];
+
       state.point = point_msg;
       geometry_msgs::Vector3 velocity_msg;
       velocity_msg.x = (value.first)[3];
