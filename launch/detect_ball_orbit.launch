@@ -89,11 +89,11 @@
             <remap from="image" to="image_color" />
             <remap from="hsv/image" to="image_hsv" />
             <param name="h_limit_max" value="16" />
-            <param name="h_limit_min" value="5" />
-            <param name="s_limit_max" value="202" />
-            <param name="s_limit_min" value="102" />
+            <param name="h_limit_min" value="6" />
+            <param name="s_limit_max" value="243" />
+            <param name="s_limit_min" value="123" />
             <param name="v_limit_max" value="255" />
-            <param name="v_limit_min" value="118" />
+            <param name="v_limit_min" value="165" />
             <param name="debug_view" value="false" />
         </node>
         <node name="rectifier" pkg="nodelet" type="nodelet"
@@ -151,12 +151,12 @@
             args="load opencv_apps/hsv_color_filter $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_color" />
             <remap from="hsv/image" to="image_hsv" />
-            <param name="h_limit_max" value="18" />
+            <param name="h_limit_max" value="15" />
             <param name="h_limit_min" value="4" />
-            <param name="s_limit_max" value="196" />
-            <param name="s_limit_min" value="117" />
+            <param name="s_limit_max" value="171" />
+            <param name="s_limit_min" value="84" />
             <param name="v_limit_max" value="255" />
-            <param name="v_limit_min" value="96" />
+            <param name="v_limit_min" value="168" />
             <param name="debug_view" value="false" />
         </node>
         <node name="rectifier" pkg="nodelet" type="nodelet"
