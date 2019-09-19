@@ -183,8 +183,8 @@ private:
     // this should be before ekf
     if (is_time_initialized_) {
         if ((header.stamp - t_).toSec() > 5.0) {
-            is_time_initialized = false;
-            is_ekf_initialized = false;
+            is_time_initialized_ = false;
+            is_ekf_initialized_ = false;
         }
         std::cerr << "[ball_orbit_estimator] Could not detect the ball for 5.0 seconds. Ekf reset." << std::endl;
     }
