@@ -6,6 +6,7 @@
 
 #include <boost/array.hpp>
 #include <boost/thread.hpp>
+#include <chrono>
 #include <memory>
 
 #include <sensor_msgs/Image.h>
@@ -179,6 +180,14 @@ private:
 
     std_msgs::Header header = pixels->header;
     header.frame_id = "odom";
+    // this should be before ekf
+    if (is_time_initialized_) {
+        if ((header.stamp - t_).toSec() > 5.0) {
+            is_time_initialized = false;
+            is_ekf_initialized = false;
+        }
+        std::cerr << "[ball_orbit_estimator] Could not detect the ball for 5.0 seconds. Ekf reset." << std::endl;
+    }
     if (not is_time_initialized_)
     {
       t_ = header.stamp;
