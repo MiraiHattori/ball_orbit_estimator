@@ -73,7 +73,7 @@
         </node>
         <node name="erode" pkg="nodelet" type="nodelet"
             args="load jsk_perception/ErodeMaskImage $(arg nodelet_manager_name_absolute)">
-            <remap from="~input" to="image_hsv" />
+            <remap from="~input" to="image_hsv_rect" />
             <remap from="erode/output" to="image_erode" />
             <rosparam>
                 method: 0
@@ -137,7 +137,7 @@
         </node>
         <node name="erode" pkg="nodelet" type="nodelet"
             args="load jsk_perception/ErodeMaskImage $(arg nodelet_manager_name_absolute)">
-            <remap from="~input" to="image_hsv" />
+            <remap from="~input" to="image_hsv_rect" />
             <remap from="erode/output" to="image_erode" />
             <rosparam>
                 method: 0
