@@ -71,7 +71,7 @@
             <remap from="image_rect" to="image_hsv_rect" />
             <param name="~queue_size" value="1" />
         </node>
-        <node name="erode" pkg="nodelet" type="nodelet"
+        <!--node name="erode" pkg="nodelet" type="nodelet"
             args="load jsk_perception/ErodeMaskImage $(arg nodelet_manager_name_absolute)">
             <remap from="~input" to="image_hsv_rect" />
             <remap from="erode/output" to="image_erode" />
@@ -94,6 +94,12 @@
         <node name="centroid" pkg="nodelet" type="nodelet"
             args="load opencv_apps/contour_moments $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_dilate" />
+            <param name="debug_view" value="false" />
+            <param name="use_camera_info" value="false" />
+        </node-->
+        <node name="centroid" pkg="nodelet" type="nodelet"
+            args="load opencv_apps/contour_moments $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_hsv_rect" />
             <param name="debug_view" value="false" />
             <param name="use_camera_info" value="false" />
         </node>
@@ -135,7 +141,7 @@
             <remap from="image_rect" to="image_hsv_rect" />
             <param name="~queue_size" value="1" />
         </node>
-        <node name="erode" pkg="nodelet" type="nodelet"
+        <!--node name="erode" pkg="nodelet" type="nodelet"
             args="load jsk_perception/ErodeMaskImage $(arg nodelet_manager_name_absolute)">
             <remap from="~input" to="image_hsv_rect" />
             <remap from="erode/output" to="image_erode" />
@@ -158,6 +164,12 @@
         <node name="centroid" pkg="nodelet" type="nodelet"
             args="load opencv_apps/contour_moments $(arg nodelet_manager_name_absolute)">
             <remap from="image" to="image_dilate" />
+            <param name="debug_view" value="false" />
+            <param name="use_camera_info" value="false" />
+        </node-->
+        <node name="centroid" pkg="nodelet" type="nodelet"
+            args="load opencv_apps/contour_moments $(arg nodelet_manager_name_absolute)">
+            <remap from="image" to="image_hsv_rect" />
             <param name="debug_view" value="false" />
             <param name="use_camera_info" value="false" />
         </node>
