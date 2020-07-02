@@ -1,5 +1,6 @@
 <launch>
   <!-- Common parameters -->
+  <arg name="log_dir" default="/userdir/logs/" />
   <arg name="camera_name" default="pointgrey" />
   <arg name="frame_rate" default="170" />
   <arg name="exposure"      value="0.0035" />
@@ -181,6 +182,9 @@
     </node>
     <node name="ball_orbit_estimator" pkg="nodelet" type="nodelet"
         args="load ball_orbit_estimator/OrbitEstimationNodelet $(arg nodelet_manager_name)">
+    </node>
+    <node name="ball_logger" pkg="rosbag" type="record"
+        args="$(arg camera_name)/log -o $(arg log_dir)">
     </node>
     <!-- <node name="disparity" pkg="nodelet" type="nodelet" -->
     <!--     args="load stereo_image_proc/disparity $(arg nodelet_manager_name_absolute)"> -->

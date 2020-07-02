@@ -12,6 +12,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <ball_state_msgs/PosAndVelWithCovarianceStamped.h>
+#include <ball_state_msgs/Log.h>
 #include <geometry_msgs/PointStamped.h>
 #include <opencv_apps/Point2DArrayStamped.h>
 
@@ -51,7 +52,7 @@ private:
   void connectCb()
   {
     boost::mutex::scoped_lock scoped_lock(connect_mutex_);
-    if (pub_ball_state_.getNumSubscribers() == 0 and pub_ball_point_.getNumSubscribers() == 0)
+    if (pub_ball_state_.getNumSubscribers() == 0 and pub_ball_point_.getNumSubscribers() == 0 and pub_log_.getNumSubscribers() == 0)
     {
       if (pub_thread_)
       {
@@ -74,14 +75,17 @@ private:
     ros::SubscriberStatusCallback cb = boost::bind(&OrbitEstimationNodelet::connectCb, this);
     pub_ball_state_ = getMTNodeHandle().advertise<ball_state_msgs::PosAndVelWithCovarianceStamped>("/pointgrey/estimated_ball_state", 1, cb, cb);
     pub_ball_point_= getMTNodeHandle().advertise<geometry_msgs::PointStamped>("/pointgrey/estimated_ball_point", 1, cb, cb);
+    pub_log_ = getMTNodeHandle().advertise<ball_state_msgs::Log>("/pointgrey/log", 1, cb, cb);
 
     // EKFの初期化はコールバック内で行う
   }
 
   void callback(const boost::shared_ptr<opencv_apps::Point2DArrayStamped const>& pixels)
   {
+    ball_state_msgs::Log log;
     if (pixels->points.size() != 2)
     {
+      log.valid = false;
       std::cerr << "[ball_orbit_estimator] invalid points size in ekf_ball_orbit_estimator.cpp" << std::endl;
     }
 
@@ -113,6 +117,20 @@ private:
 
     Eigen::Matrix3d rot_camera = q_camera.normalized().toRotationMatrix();
     Eigen::Matrix3d rot_camera_inv = q_camera_inv.normalized().toRotationMatrix();
+    log.camera_pos.x = pos_camera[0];
+    log.camera_pos.y = pos_camera[1];
+    log.camera_pos.z = pos_camera[2];
+    log.camera_pos_inv.x = pos_camera_inv[0];
+    log.camera_pos_inv.y = pos_camera_inv[1];
+    log.camera_pos_inv.z = pos_camera_inv[2];
+    log.q_camera.x = q_camera.x();
+    log.q_camera.y = q_camera.y();
+    log.q_camera.z = q_camera.z();
+    log.q_camera.w = q_camera.w();
+    log.q_camera_inv.x = q_camera_inv.x();
+    log.q_camera_inv.y = q_camera_inv.y();
+    log.q_camera_inv.z = q_camera_inv.z();
+    log.q_camera_inv.w = q_camera_inv.w();
     std::cerr << "pos_camera: " << pos_camera.transpose() << std::endl;
     std::cerr << "pos_camera_inv: " << pos_camera_inv.transpose() << std::endl;
     std::cerr << "q_camera: " << q_camera.x() << " " << q_camera.y() << " " << q_camera.z() << " " << q_camera.w() << std::endl;
@@ -127,6 +145,7 @@ private:
     pixel_l[1] = pixels->points.at(0).y;
     pixel_r[0] = pixels->points.at(1).x;
     pixel_r[1] = pixels->points.at(1).y;
+    log.pixel_lxlyrxry = boost::array<double, 4>({pixel_l[0], pixel_l[1], pixel_r[0], pixel_r[1]});
     std::cerr << "pixel: " << pixel_l[0] << " " << pixel_l[1] << " " << pixel_r[0] << " " << pixel_r[1] << std::endl;
 
     Eigen::MatrixXd PL(3, 4);
@@ -165,6 +184,9 @@ private:
     Eigen::VectorXd point_opt(3);
     point_opt << result.at<float>(0, 0) / result.at<float>(3, 0), result.at<float>(1, 0) / result.at<float>(3, 0),
         result.at<float>(2, 0) / result.at<float>(3, 0);
+    log.opt_ball_pos.x = point_opt[0];
+    log.opt_ball_pos.y = point_opt[1];
+    log.opt_ball_pos.z = point_opt[2];
     std::cerr << "optical_point(norm,x,y,z): " << point_opt.norm() << " " << point_opt[0] << " " << point_opt[1] << " " << point_opt[2] << std::endl;
 
     // odom座標系でのボール位置
@@ -173,8 +195,12 @@ private:
 
     // リンク座標を地面の姿勢に変えた系でのボール位置
     std::cerr << "measured: " << point_rot[0] << " " << point_rot[1] << " " << point_rot[2] << std::endl;
-    if (point_rot[0] < 0.0 or point_rot[0] > 10.0 or point_rot[2] < 0.0 or point_rot[2] > 4.0) {
+    log.raw_ball_pos.x = point_rot[0];
+    log.raw_ball_pos.y = point_rot[1];
+    log.raw_ball_pos.z = point_rot[2];
+    if (point_rot[0] < 0.0 or point_rot[0] > 20.0 or point_rot[2] < -10.0 or point_rot[2] > 10.0) {
         std::cerr << "[ball_orbit_estimator] invalid ball point" << std::endl;
+        log.valid = false;
         return;
     }
 
@@ -185,6 +211,7 @@ private:
         if ((header.stamp - t_).toSec() > 5.0) {
             is_time_initialized_ = false;
             is_ekf_initialized_ = false;
+            log.continuing = false;
             std::cerr << "[ball_orbit_estimator] Could not detect the ball for 5.0 seconds. Ekf reset." << std::endl;
         }
     }
@@ -197,6 +224,7 @@ private:
     t_ = header.stamp;
     ros::Duration diff = t_ - t;
     double delta_t = diff.toSec();
+    log.delta_t = delta_t;
     std::cerr << "delta_t: " << delta_t << std::endl;
     if (delta_t < 0.0)
     {
@@ -357,6 +385,24 @@ private:
       estimated_point.point = point_msg;
       pub_ball_point_.publish(estimated_point);
 
+      log.header = header;
+      log.point.x = (value.first)[0];
+      log.point.y = (value.first)[1];
+      log.point.z = (value.first)[2];
+      log.velocity.x = (value.first)[3];
+      log.velocity.y = (value.first)[4];
+      log.velocity.z = (value.first)[5];
+      log.valid = true;
+      log.continuing = true;
+      for (size_t i = 0; i < 6; i++)
+      {
+        for (size_t j = 0; j < 6; j++)
+        {
+          log.pos_and_vel_covariance.at(i * 6 + j) = (value.second)(i, j);
+        }
+      }
+      pub_log_.publish(log);
+
       std::cerr << "estimated: " << (value.first)[0] << " " << (value.first)[1] << " " << (value.first)[2] << " "
                 << (value.first)[3] << " " << (value.first)[4] << " " << (value.first)[5] << std::endl;
       std::cerr << "coeff: " << std::endl;
@@ -434,6 +480,7 @@ private:
   ros::Subscriber sub_pixels_;
   ros::Publisher pub_ball_state_;
   ros::Publisher pub_ball_point_;
+  ros::Publisher pub_log_;
   std::unique_ptr<sensor_msgs::CameraInfo> ci_ = nullptr;
   std::unique_ptr<sensor_msgs::CameraInfo> rci_ = nullptr;
   bool is_ekf_initialized_ = false;

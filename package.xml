@@ -26,6 +26,8 @@
   <depend>avr-libc</depend>
   <depend>avrdude</depend>
 
+  <exec_depend>eigen_conversions</exec_depend>
+  <exec_depend>tf_conversions</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>image_proc</exec_depend>
   <exec_depend>stereo_image_proc</exec_depend>

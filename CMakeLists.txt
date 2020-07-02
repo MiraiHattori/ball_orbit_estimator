@@ -3,7 +3,7 @@ project(ball_orbit_estimator)
 
 find_package(catkin REQUIRED COMPONENTS
   nodelet roscpp message_generation sensor_msgs ball_state_msgs roseus
-  image_transport opencv_apps cv_bridge
+  image_transport opencv_apps cv_bridge eigen_conversions tf_conversions
 )
 
 catkin_package(CATKIN_DEPENDS
