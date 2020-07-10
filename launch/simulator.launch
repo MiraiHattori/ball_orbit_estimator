@@ -184,7 +184,7 @@
         args="load ball_orbit_estimator/OrbitEstimationNodelet $(arg nodelet_manager_name)">
     </node>
     <node name="ball_logger" pkg="rosbag" type="record"
-        args="$(arg camera_name)/log -o $(arg log_dir)">
+        args="log -o $(arg log_dir)">
     </node>
     <!-- <node name="disparity" pkg="nodelet" type="nodelet" -->
     <!--     args="load stereo_image_proc/disparity $(arg nodelet_manager_name_absolute)"> -->
