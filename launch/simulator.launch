@@ -11,6 +11,7 @@
   <arg name="trigger_source"          value="GPIO0" />
   <arg name="trigger_polarity"          value="0" />
   <arg name="gamma"          value="0.6" />
+  <arg name="timestamp_str" default="" />
 
   <arg name="camera_serial_l" default="16276501" />
   <arg name="camera_calibrated_l" default="true" />
@@ -184,7 +185,7 @@
         args="load ball_orbit_estimator/OrbitEstimationNodelet $(arg nodelet_manager_name)">
     </node>
     <node name="ball_logger" pkg="rosbag" type="record"
-        args="log -o $(arg log_dir)">
+        args="log  -O $(arg log_dir)/$(arg timestamp_str)_ball.bag">
     </node>
     <!-- <node name="disparity" pkg="nodelet" type="nodelet" -->
     <!--     args="load stereo_image_proc/disparity $(arg nodelet_manager_name_absolute)"> -->
